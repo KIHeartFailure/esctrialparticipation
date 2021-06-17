@@ -1,0 +1,188 @@
+---
+title: 'Statistical report: Association between clinical trial participation and outcomes in patients with heart failure: observations from the ESC Heart Failure Long-Term Registry'
+subtitle: 'DRAFT'
+author: 'Statistician: Lina Benson'
+  
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    fig_caption: yes
+    fig_height: 7
+    fig_width: 7
+    number_sections: yes
+link-citations: yes
+bibliography: references.bib
+nocite: '@*'
+header-includes:
+   - \usepackage{draftwatermark}
+---
+
+\newpage 
+\tableofcontents 
+\listoftables
+\listoffigures
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, include = TRUE, comment = "",
+  warning = FALSE, message = FALSE, fig.pos = "H",
+  fig.path = "../output/figs/"
+)
+options(knitr.kable.NA = "")
+```
+
+```{r adjust_directory_if_needed, include=FALSE}
+# Uncomment lines below if rmd file is placed in a subdirectory
+knitr::opts_knit$set(root.dir = normalizePath("../"))
+```
+
+```{r load_project}
+# 1. Set options in config/global.dcf
+# 2. Load packages listed in config/global.dcf
+# 3. Import functions and code in lib directory
+
+ProjectTemplate::reload.project()
+
+cacheon <- TRUE
+```             
+
+# Data handling
+
+## Data source
+
+hf3_lt_fu_data_soladis_jan19.sas7bdat (from the folder DATABASE_ANALYZED.ZIP). 
+
+## Inclusion/exclusion criteria
+
+```{r flow}
+default_kable(flow, caption = "Flowchart")
+```
+
+QUESTION: Do you want to include patients who died in hospital or were lost to follow-up where possible (in baseline tables) and remove only for outcome analysis? And have sep baseline tables also only for those discharged alive and with follow-up? (this is what is done now). Or do you want to remove in-hosp dead and lost to follow-up from all tabs/figs? The patients lost to follow-up are primarily patients that were included late in the study so I don't think there should be a substantial bias here (if it is not country-wise). However for patients that died in hospital I would have fought there can be large differences and intepretation will be different depending on how choose to do. Is the clinical trial question rand AT registration or can it be either PRIOR or AT?
+
+First patient in: `r min(edata$num_dmVisitdt)` and last patient in: `r max(edata$num_dmVisitdt)`. 
+
+The median age (IQR) is `r edata %>% summarise(med = fn(median(num_age, na.rm = TRUE), dig = 1),
+                                             q1 = fn(quantile(num_age, na.rm = TRUE, probs = 0.25), dig = 1),
+                                             q3 = fn(quantile(num_age, na.rm = TRUE, probs = 0.75), dig = 1)) %>%
+                                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+                                   pull(out)` and 
+`r edata %>% count(num_dmgender) %>%
+  mutate(perc = fn(n / sum(n) * 100, 1)) %>%
+  filter(num_dmgender == "Female") %>%
+  pull(perc)`% females.  
+
+# Statistical analysis 
+
+## General
+
+All analyses were performed using `r sessionInfo()$R.version$version.string` [@r]. 
+The level of significance is set to 5%, two-sided. No adjustment for multiple 
+comparisons were made and therefore the results should be viewed with some care.
+
+## Missing data
+
+For patients with missing information on the date of hospitalisation, 
+the time to hospitalisation was imputed with half the time to last
+follow-up. Further, times to hospitalisation that were larger than time 
+to death or last follow-up were set to death or last follow-up. 
+
+Missing data for the covariates included in the models was imputed with multiple 
+imputation using mice [@mice] for 10 datasets and 10 iterations. 
+Variables included in the imputation model are the same as are 
+included in the cox regression. Death was included as the Nelson-Aalen estimator 
+in the imputation model. 
+
+QUESTION: OK to above?
+
+## Baseline characteristics
+
+```{r, child = "../src/tab12.Rmd"}
+
+```
+
+\clearpage
+
+```{r, child = "../src/tabmed.Rmd"}
+
+```
+
+QUESTION: 
+
+- You requested Peripheral congestion. Sorry, I can't find. Could you give a hint in what section it is found? 
+- For a few of the variables there are multiple values available, especially for the hosp patients 
+(for example for nyha and chemistry), partly during hosp and partly at discharge. 
+For all patients there are multiple registrations 
+of for example bp. In those cases, which values do you want to include?
+- Some variables are requested in both tab 1 and 2. In those cases they are only presented in tab 2. 
+- There are a lot of different varables in the sections for tab 2. I have not included all, please see if ok. 
+- For medications I suggest you present in % of for example target dose to make doses comparable across substances. 
+If you want to do this could you please provide target dose for each substance?
+
+## Assocation between trial participation and characteristics
+
+Performed using logistic regression models.
+
+QUESTION: 
+- I would not recommend including (only?) stat sig variables in the adjusted models. 
+Perhaps a few or all variables should be selected based on clinical relevance and prior knowledge?
+
+## Outcome analysis
+
+The following outcomes are considered: 
+
+- All cause mortality
+- CV mortality
+- HF hospitalisations 
+- All cause mortality/HF hospitalisations 
+
+Time is from date of discharge, or if this is missing, date of admission and 
+censored at death not defined as an event or follow-up.  
+
+In-hospital mortality is modelled using logistic regression. 
+
+The long-term outcomes are presented with the 1 - Kaplan-Meier curves. Cox proportional hazards regressions were 
+used to model the time to first event analysis and negative 
+binomial regression including the log of time as an offset in the model for 
+the repeated events. 
+
+QUESTION: Do you want to time to FIRST hosp or also repeated hosp?  
+
+The median (min-max) follow-up for the long-term outcomes is 
+`r survdata %>% summarise(med = fn(median(outtime_death / 365.25 * 12), dig = 1),
+                                             min = fn(min(outtime_death / 365.25 * 12), dig = 1),
+                                             max = fn(max(outtime_death / 365.25 * 12), dig = 1)) %>%
+                                   mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
+                                   pull(out)` months for a total of 
+                                   `r survdata %>% 
+                                   summarise(sumpy = fn(sum(outtime_death) / 365.25, dig = 0)) %>%
+                                   pull(sumpy)` patient-years of follow-up.
+
+### Assumptions
+
+The proportional hazards assumption was investigated using the scaled Schoenfeld 
+residuals (cox.zph in [@survival-package]) for the primary outcome. 
+Possible outliers were visually inspected by plotting the dfbetas. 
+=> XXXX. 
+
+\clearpage
+\newpage
+
+# Reproducibility
+
+## R session information {#sessioninfo}
+
+```{r sessinfo}
+sessionInfo()
+```
+
+## R code
+
+The R code for all data handling and statistical analyses are found: 
+https://github.com/KIHeartFailure/esctrialparticipation. On publication
+the repository will be made public so as to 
+link to it from the resulting article for increased transparency and code sharing.
+No data or output is stored in the repository. 
+
+# References
