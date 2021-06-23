@@ -42,6 +42,7 @@ edata <- edata %>%
     ),
     num_Cre = coalesce(num_dcCre, num_opCre),
     num_CKDEPI = nephro::CKDEpi.creat(num_Cre, sex, num_age, ethnicity),
+    num_CKDEPI = if_else(num_CKDEPI == Inf, NA_real_, num_CKDEPI),
     num_CKDEPI_cat = factor(case_when(
       num_CKDEPI < 60 ~ 2,
       num_CKDEPI >= 60 ~ 1
@@ -49,12 +50,19 @@ edata <- edata %>%
     levels = 1:2,
     labels = c(">=60", "<60")
     ),
-    num_Hb = coalesce(num_dcHb, num_opHb),
+    # num_Hb = coalesce(num_dcHb, num_opHb),
     num_Nyha = coalesce(num_dcNyha, num_opNyha),
     num_Nt = coalesce(num_dcNt, num_opNt),
-    num_Mr = coalesce(num_dcMr, num_opMr),
+    # num_Mr = coalesce(num_dcMr, num_opMr),
     num_Hypop = coalesce(num_dcHypop, num_opHypop),
-    num_Xpu = coalesce(num_dcXpu, num_opXpu),
+    num_Jvp = coalesce(num_dcJvp, num_opJvp),
+    num_Hep = coalesce(num_dcHep, num_opHep),
+    num_Oed = coalesce(num_dcOed, num_opOed),
+    per_congestion = case_when(
+      is.na(num_Jvp) | is.na(num_Hep) | is.na(num_Oed) ~ NA_character_,
+      num_Jvp == "Yes" | num_Hep == "Yes" | num_Oed == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
 
     # tab 2
 
@@ -70,11 +78,7 @@ edata <- edata %>%
     num_Xr = coalesce(num_dcXr, num_opXr),
     num_Xrn = coalesce(num_dcXrn, num_opXrn),
     num_Xpu = coalesce(num_dcXpu, num_opXpu),
-    num_Xpu = if_else(num_Xrn == "Yes", "No", as.character(num_Xpu)),
-    num_Xen = coalesce(num_dcXen, num_opXen),
-    num_Xen = if_else(num_Xen == "Yes", "No", as.character(num_Xen)),
-    num_Xal = coalesce(num_dcXal, num_opXal),
-    num_Xal = if_else(num_Xal == "Yes", "No", as.character(num_Xal)),
+    pulm_congestion = if_else(num_Xrn == "Yes", "No", as.character(num_Xpu)),
 
     # ech-doppler
     num_Ef = coalesce(num_dcEf, num_opEf),
@@ -83,6 +87,14 @@ edata <- edata %>%
       num_Ef < 41 ~ 1,
       num_Ef <= 49 ~ 2,
       num_Ef >= 50 ~ 3
+    ),
+    levels = 1:3, labels = c("<41%", "41-49%", ">=50%")
+    ),
+    num_dmEflp_cat = factor(case_when(
+      is.na(num_dmEflp) ~ NA_real_,
+      num_dmEflp < 41 ~ 1,
+      num_dmEflp <= 49 ~ 2,
+      num_dmEflp >= 50 ~ 3
     ),
     levels = 1:3, labels = c("<41%", "41-49%", ">=50%")
     ),
@@ -129,25 +141,165 @@ edata <- edata %>%
 
     ## meds
 
+    d_rasi_prior = case_when(
+      is.na(num_mdACEp) | is.na(num_mdATp) ~ NA_character_,
+      num_mdACEp == "Yes" | num_mdATp == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    d_rasiarni_prior = case_when(
+      is.na(num_mdACEp) | is.na(num_mdATp) ~ NA_character_,
+      num_mdACEp == "Yes" | num_mdATp == "Yes" | num_mdARNIp == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    d_ACEdose_eqCaptopril_prior = case_when(
+      num_mdACEp_c2 == "Captopril" ~ num_mdACEpdo / 150 * 150,
+      num_mdACEp_c2 == "Ramipril" ~ num_mdACEpdo / 10 * 150,
+      num_mdACEp_c2 == "Enalapril" ~ num_mdACEpdo / 40 * 150,
+      num_mdACEp_c2 == "Perindopril" ~ num_mdACEpdo / 16 * 150,
+      num_mdACEp_c2 == "Lisinopril" ~ num_mdACEpdo / 40 * 150,
+      num_mdACEp_c2 == "Fosinopril" ~ num_mdACEpdo / 40 * 150
+    ),
+    d_ATdose_eqCaptopril_prior = case_when(
+      num_mdATp_c2 == "Candesartan" ~ num_mdATpdo / 32 * 150,
+      num_mdATp_c2 == "Losartan" ~ num_mdATpdo / 150 * 150,
+      num_mdATp_c2 == "Valsartan" ~ num_mdATpdo / 320 * 150
+    ),
+    d_ARNIdose_eqCaptopril_prior = case_when(
+      num_mdARNIp == "Yes" ~ num_mdARNIpdo / 400 * 150
+    ),
+    d_rasiarnimaxdose_prior = pmax(d_ACEdose_eqCaptopril_prior, d_ATdose_eqCaptopril_prior, d_ARNIdose_eqCaptopril_prior, na.rm = T),
+    d_rasiarnidosetarget_prior = factor(case_when(
+      d_rasiarnimaxdose_prior < 150 / 2 ~ 1,
+      d_rasiarnimaxdose_prior < 150 ~ 2,
+      d_rasiarnimaxdose_prior >= 150 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdACE_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdACEd,
       num_dmPtype == "Outpatient" ~ num_mdACEh
+    ),
+    num_mdACE_c2_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdACEd_c2,
+      num_dmPtype == "Outpatient" ~ num_mdACEh_c2
+    ),
+    num_mdACE_aftern = case_when(
+      num_dmPtype == "Hospital" ~ num_mdACEdn,
+      num_dmPtype == "Outpatient" ~ num_mdACEhn
+    ),
+    num_mdACEdo_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdACEddo,
+      num_dmPtype == "Outpatient" ~ num_mdACEhdo
     ),
     num_mdAT_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdATd,
       num_dmPtype == "Outpatient" ~ num_mdATh
     ),
+    num_mdAT_c2_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdATd_c2,
+      num_dmPtype == "Outpatient" ~ num_mdATh_c2
+    ),
+    num_mdAT_aftern = case_when(
+      num_dmPtype == "Hospital" ~ num_mdATdn,
+      num_dmPtype == "Outpatient" ~ num_mdAThn
+    ),
+    num_mdATdo_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdATddo,
+      num_dmPtype == "Outpatient" ~ num_mdAThdo
+    ),
     num_mdARNI_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdARNId,
       num_dmPtype == "Outpatient" ~ num_mdARNIh
     ),
+    num_mdARNI_aftern = case_when(
+      num_dmPtype == "Hospital" ~ num_mdARNIdn,
+      num_dmPtype == "Outpatient" ~ num_mdARNIhn
+    ),
+    num_mdARNIdo_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdARNIddo,
+      num_dmPtype == "Outpatient" ~ num_mdARNIhdo
+    ),
+    d_rasi_after = case_when(
+      is.na(num_mdACE_after) | is.na(num_mdAT_after) ~ NA_character_,
+      num_mdACE_after == "Yes" | num_mdAT_after == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    d_rasiarni_after = case_when(
+      is.na(num_mdACE_after) | is.na(num_mdAT_after) ~ NA_character_,
+      num_mdACE_after == "Yes" | num_mdAT_after == "Yes" | num_mdARNI_after == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    d_ACEdose_eqCaptopril_after = case_when(
+      num_mdACE_c2_after == "Captopril" ~ num_mdACEdo_after / 150 * 150,
+      num_mdACE_c2_after == "Ramipril" ~ num_mdACEdo_after / 10 * 150,
+      num_mdACE_c2_after == "Enalapril" ~ num_mdACEdo_after / 40 * 150,
+      num_mdACE_c2_after == "Perindopril" ~ num_mdACEdo_after / 16 * 150,
+      num_mdACE_c2_after == "Lisinopril" ~ num_mdACEdo_after / 40 * 150,
+      num_mdACE_c2_after == "Fosinopril" ~ num_mdACEdo_after / 40 * 150
+    ),
+    d_ATdose_eqCaptopril_after = case_when(
+      num_mdAT_c2_after == "Candesartan" ~ num_mdATdo_after / 32 * 150,
+      num_mdAT_c2_after == "Losartan" ~ num_mdATdo_after / 150 * 150,
+      num_mdAT_c2_after == "Valsartan" ~ num_mdATdo_after / 320 * 150
+    ),
+    d_ARNIdose_eqCaptopril_after = case_when(
+      num_mdARNI_after == "Yes" ~ num_mdARNIdo_after / 400 * 150
+    ),
+    d_rasiarnimaxdose_after = pmax(d_ACEdose_eqCaptopril_after, d_ATdose_eqCaptopril_after, d_ARNIdose_eqCaptopril_after, na.rm = T),
+    d_rasiarnidosetarget_after = factor(case_when(
+      d_rasiarnimaxdose_after < 150 / 2 ~ 1,
+      d_rasiarnimaxdose_after < 150 ~ 2,
+      d_rasiarnimaxdose_after >= 150 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdAL_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdALd,
       num_dmPtype == "Outpatient" ~ num_mdALh
     ),
+    num_mdAL_aftern = case_when(
+      num_dmPtype == "Hospital" ~ num_mdALdn,
+      num_dmPtype == "Outpatient" ~ num_mdALhn
+    ),
+
+    ## bbl
+    d_BBdose_eqCarvedilol_prior = case_when(
+      num_mdBBp_c2 == "Bisoprolol" ~ num_mdBBddo / 10 * 50,
+      num_mdBBp_c2 == "Metoprolol" ~ num_mdBBddo / 200 * 50,
+      num_mdBBp_c2 == "Nebivolol" ~ num_mdBBddo / 10 * 50,
+      num_mdBBp_c2 == "Carvedilol" ~ num_mdBBddo / 50 * 50
+    ),
+    d_BBdosetarget_prior = factor(case_when(
+      d_BBdose_eqCarvedilol_prior < 50 / 2 ~ 1,
+      d_BBdose_eqCarvedilol_prior < 50 ~ 2,
+      d_BBdose_eqCarvedilol_prior >= 50 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdBB_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdBBd,
       num_dmPtype == "Outpatient" ~ num_mdBBh
+    ),
+    num_mdBB_aftern = case_when(
+      num_dmPtype == "Hospital" ~ num_mdBBdn,
+      num_dmPtype == "Outpatient" ~ num_mdBBhn
+    ),
+    num_mdBB_c2_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdBBd_c2,
+      num_dmPtype == "Outpatient" ~ num_mdBBh_c2
+    ),
+    num_mdBBdo_after = case_when(
+      num_dmPtype == "Hospital" ~ num_mdBBddo,
+      num_dmPtype == "Outpatient" ~ num_mdBBhdo
+    ),
+    d_BBdose_eqCarvedilol_after = case_when(
+      num_mdBB_c2_after == "Bisoprolol" ~ num_mdBBdo_after / 10 * 50,
+      num_mdBB_c2_after == "Metoprolol" ~ num_mdBBdo_after / 200 * 50,
+      num_mdBB_c2_after == "Nebivolol" ~ num_mdBBdo_after / 10 * 50,
+      num_mdBB_c2_after == "Carvedilol" ~ num_mdBBdo_after / 50 * 50
+    ),
+    d_BBdosetarget_after = factor(case_when(
+      d_BBdose_eqCarvedilol_after < 10 / 2 ~ 1,
+      d_BBdose_eqCarvedilol_after < 10 ~ 2,
+      d_BBdose_eqCarvedilol_after >= 10 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
+    num_mdBBdo_aftercn = case_when(
+      num_mdBB_after == "Yes" | num_mdBB_aftern %in% c("Contraindicated", "Not tolerated") ~ "Yes/Not tol/Contraindicated",
+      num_mdBB_after == "No" ~ "Reason No Other/Missing"
     ),
 
     # Meds at follow-up
@@ -168,15 +320,62 @@ edata <- edata %>%
       num_f1MedAny == "No" ~ "No",
       TRUE ~ as.character(num_f1ARNI)
     ),
+    f1_rasi = case_when(
+      is.na(f1_ACE) | is.na(f1_AT) ~ NA_character_,
+      f1_ACE == "Yes" | f1_AT == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    f1_rasiarni = case_when(
+      is.na(f1_ACE) | is.na(f1_AT) ~ NA_character_,
+      f1_ACE == "Yes" | f1_AT == "Yes" | f1_ARNI == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
+    f1_ACEdose_eqCaptopril = case_when(
+      num_f1ACEh_c2 == "Captopril" ~ num_f1ACEhdo / 150 * 150,
+      num_f1ACEh_c2 == "Ramipril" ~ num_f1ACEhdo / 10 * 150,
+      num_f1ACEh_c2 == "Enalapril" ~ num_f1ACEhdo / 40 * 150,
+      num_f1ACEh_c2 == "Perindopril" ~ num_f1ACEhdo / 16 * 150,
+      num_f1ACEh_c2 == "Lisinopril" ~ num_f1ACEhdo / 40 * 150,
+      num_f1ACEh_c2 == "Fosinopril" ~ num_f1ACEhdo / 40 * 150
+    ),
+    f1_ATdose_eqCaptopril = case_when(
+      num_f1ATh_c2 == "Candesartan" ~ num_f1AThdo / 32 * 150,
+      num_f1ATh_c2 == "Losartan" ~ num_f1AThdo / 150 * 150,
+      num_f1ATh_c2 == "Valsartan" ~ num_f1AThdo / 320 * 150
+    ),
+    f1_ARNIdose_eqCaptopril = case_when(
+      num_f1ARNI == "Yes" ~ num_f1ARNIdo / 400 * 150
+    ),
+    f1_rasiarnimaxdose = pmax(f1_ACEdose_eqCaptopril, f1_ATdose_eqCaptopril, f1_ARNIdose_eqCaptopril, na.rm = T),
+    f1_rasiarnidosetarget = factor(case_when(
+      f1_rasiarnimaxdose < 150 / 2 ~ 1,
+      f1_rasiarnimaxdose < 150 ~ 2,
+      f1_rasiarnimaxdose >= 150 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     f1_BB = case_when(
       num_f1MedAny == "No" ~ "No",
       TRUE ~ as.character(num_f1BBh)
     ),
+    f1_BBdose_eqCarvedilol = case_when(
+      num_f1BBh_c2 == "Bisoprolol" ~ num_f1BBhdo / 10 * 50,
+      num_f1BBh_c2 == "Metoprolol" ~ num_f1BBhdo / 200 * 50,
+      num_f1BBh_c2 == "Nebivolol" ~ num_f1BBhdo / 10 * 50,
+      num_f1BBh_c2 == "Carvedilol" ~ num_f1BBhdo / 50 * 50
+    ),
+    f1_BBdosetarget = factor(case_when(
+      f1_BBdose_eqCarvedilol < 50 / 2 ~ 1,
+      f1_BBdose_eqCarvedilol < 50 ~ 2,
+      f1_BBdose_eqCarvedilol >= 50 ~ 3
+    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
+
 
     # Outcomes
     enddtm = coalesce(num_f1DeathDt, num_f1contDt),
     startdtm = coalesce(num_dcDischdt, num_dmVisitdt),
     outtime_death = as.numeric(enddtm - startdtm),
+
+    # remove if neg follow-up times
+    outtime_death = if_else(outtime_death < 0, NA_real_, outtime_death),
     out_death = case_when(
       num_f1vital == "Alive" ~ 0,
       num_f1vital == "Dead" ~ 1
@@ -205,11 +404,12 @@ edata <- edata %>%
       num_f1hosp5cs == "HF" ~ num_f1hosp5dt
     ),
     outtime_hosphf = as.numeric(out_hosphfdtm - startdtm),
+    # impute hf hosp date
     outtime_hosphf = ifelse(out_hosphf == 1 & is.na(outtime_hosphf), outtime_death / 2, outtime_hosphf),
     outtime_hosphf = pmin(outtime_hosphf, outtime_death, na.rm = TRUE),
 
-    # cv death or hf hosp
-    out_deathcvhosphf = ifelse(out_hosphf == 1, 1, out_deathcv)
+    # death or hf hosp
+    out_deathhosphf = ifelse(out_hosphf == 1, 1, out_death)
   ) %>%
   mutate_if(is.character, as.factor) %>%
   select(-starts_with("tmp_"))

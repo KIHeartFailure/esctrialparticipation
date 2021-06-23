@@ -24,12 +24,11 @@ tab1func <- function(data, tabvars = tab1vars,
     select(var, Missing, everything())
 
   tab <- tab %>%
-    # remove = Yes
-    mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
     # to get labs in place
     mutate(
       var_tmp = str_split(var, " = ", simplify = TRUE)[, 1],
-      val_tmp = str_split(var, " = ", simplify = TRUE)[, 2]
+      val_tmp = str_split(var, " = ", simplify = TRUE)[, 2],
+      val_tmp = if_else(val_tmp == "Yes", "", val_tmp)
     )
 
   tab <- left_join(tab,
@@ -45,10 +44,19 @@ tab1func <- function(data, tabvars = tab1vars,
       )
     )
 
+  write.xlsx(tab %>%
+    select(Variable, Missing:p), paste0("./output/tabs/tab1_", tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+
+  # footnotes
   tab <- tab %>%
+    mutate(
+      footnote1 = if_else(var_tmp %in% modvars, footnote_marker_symbol(1), "")
+    ) %>%
+    unite(footnote, starts_with("footnote"), sep = "") %>%
     mutate(
       # so no probs
       Variable = sanitize_text(Variable),
+      Variable = paste0(Variable, footnote),
 
       # space in Latex output (fix this other way?)
       Variable = sub("  ", ". ", Variable)
@@ -58,8 +66,6 @@ tab1func <- function(data, tabvars = tab1vars,
   colnames(tab) <- sanitize_text(c(
     "Variable", "Missing (%)", levels(edata %>% pull(num_dmRCT)), "p-value"
   ))
-
-  write.xlsx(tab, paste0("./output/tabs/tab1_", tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
   footnote(
     default_kable(tab,
@@ -71,7 +77,8 @@ tab1func <- function(data, tabvars = tab1vars,
     # landscape(),
     general = c(
       "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis test."
-    )
+    ),
+    symbol = c("Included in imputation, logistic and cox regression models")
   )
 }
 ```
@@ -82,38 +89,8 @@ tab1func(data = edata, tabname = "All")
 
 \clearpage
 
-```{r tab1allin, cache=cacheon, dependson="tab1"}
-tab1func(data = edata %>% filter(num_dmPtype == "Hospital"), tabname = "All - inpatients")
-```
-
-\clearpage
-
-```{r tab1allout, cache=cacheon, dependson="tab1"}
-tab1func(data = edata %>% filter(num_dmPtype == "Outpatient"), tabname = "All - outpatients")
-```
-
-\clearpage
-
 ```{r tab1surv, cache=cacheon, dependson="tab1"}
-tab1func(data = survdata, tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)")
-```
-
-\clearpage
-
-```{r tab1survin, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = survdata %>% filter(num_dmPtype == "Hospital"),
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis) - inpatients"
-)
-```
-
-\clearpage
-
-```{r tab1survout, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = survdata %>% filter(num_dmPtype == "Outpatient"),
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis) - outpatients"
-)
+tab1func(data = edata %>% filter(survpop), tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)")
 ```
 
 \clearpage
@@ -128,30 +105,9 @@ tab1func(
 
 \clearpage
 
-```{r tab2allin, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = edata %>% filter(num_dmPtype == "Hospital"), tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "All - inpatients"
-)
-```
-
-\clearpage
-
-```{r tab2allout, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = edata %>% filter(num_dmPtype == "Outpatient"),
-  tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "All - outpatients"
-)
-```
-
-\clearpage
-
 ```{r tab2surv, cache=cacheon, dependson="tab1"}
 tab1func(
-  data = survdata, tabvars = tab2vars,
+  data = edata %>% filter(survpop), tabvars = tab2vars,
   tabnamebase = "Interventions/procedures/scores - ",
   tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)"
 )
@@ -159,22 +115,22 @@ tab1func(
 
 \clearpage
 
-```{r tab2survin, cache=cacheon, dependson="tab1"}
+```{r tabmedall, cache=cacheon, dependson="tab1"}
 tab1func(
-  data = survdata %>% filter(num_dmPtype == "Hospital"),
-  tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis) - inpatients"
+  data = edata,
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - ",
+  tabname = "All"
 )
 ```
 
 \clearpage
 
-```{r tab2survout, cache=cacheon, dependson="tab1"}
+```{r tabmedsurv, cache=cacheon, dependson="tab1"}
 tab1func(
-  data = survdata %>% filter(num_dmPtype == "Outpatient"),
-  tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis) - outpatients"
+  data = edata %>% filter(survpop),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - ",
+  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)"
 )
 ```

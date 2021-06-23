@@ -10,12 +10,12 @@ ProjectTemplate::reload.project(
   munging = TRUE
 )
 
-ProjectTemplate::cache("flow")
-ProjectTemplate::cache("edata")
-ProjectTemplate::cache("survdata")
 ProjectTemplate::cache("tab1vars")
 ProjectTemplate::cache("tab2vars")
 ProjectTemplate::cache("tabmedvars")
-# ProjectTemplate::cache("imp")
-# ProjectTemplate::cache("imp.org")
-# ProjectTemplate::cache("noimpvars")
+ProjectTemplate::cache("modvars")
+
+ProjectTemplate::cache("flow")
+
+ProjectTemplate::cache("edata")
+ProjectTemplate::cache("imp")

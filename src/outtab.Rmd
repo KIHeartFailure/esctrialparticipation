@@ -1,0 +1,226 @@
+```{r outtab, cache=cacheon}
+survfunc <- function(time, event, eventname, data, submi) {
+  out <- data.frame(matrix(NA, ncol = 4, nrow = 3))
+
+  out[1, 1] <- eventname
+  colnames(out) <- c("Outcome", "Model", levels(edata$num_dmRCT))
+
+  ## incidence rate
+  out[1, 2] <- "Incidence"
+
+  ev <- data %>%
+    group_by(num_dmRCT) %>%
+    summarise(
+      ev = sum(!!sym(event) == 1),
+      .groups = "rowwise"
+    )
+
+  s <- data %>%
+    group_by(num_dmRCT) %>%
+    summarise(
+      s = sum(!!sym(time) / 365.25),
+      .groups = "rowwise"
+    )
+  r <- pois.exact(x = ev$ev, pt = s$s / 1000)
+
+  out[1, 3:4] <- paste0(
+    ev$ev, ", ",
+    fn(s$s, dig = 0), ", ",
+    fn(r$rate, dig = 0), " (",
+    fn(r$lower, dig = 0), "-",
+    fn(r$upper, dig = 0), ")"
+  )
+
+  # cox regressions
+
+  ## crude
+
+  out[2, 2] <- "Crude HR (95% CI), p-value"
+
+  mod <- coxph(formula(paste0("Surv(", time, ",", event, "== 1) ~ num_dmRCT")),
+    data = data
+  )
+  smod <- summary(mod)
+
+  out[2, 3:4] <- c("ref", paste0(
+    fn(smod$conf.int[1, 1], dig = 2),
+    " (", fn(smod$conf.int[1, 3], dig = 2),
+    "-", fn(smod$conf.int[1, 4], dig = 2), "), ",
+    fn(smod$coef[1, 5], dig = 3, p = TRUE)
+  ))
+
+  ## adjusted individual covariates
+
+  out[3, 2] <- "Adjusted HR (95% CI), p-value"
+
+  amod <- hf.coxph.mids(formula(paste0(
+    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ",
+    paste(modvars, collapse = " + ")
+  )), data = imp, subset = submi)
+
+  ## df the number of events minus the regression coefficients.
+  ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+  asmod <- summary(pool(amod,
+    dfcom =
+      (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+  ))
+
+  out[3, 3:4] <- c("ref", paste0(
+    fn(exp(asmod$estimate[1]), dig = 2),
+    " (", fn(exp(asmod$estimate[1] - global_z05 * asmod$std.error[1]), dig = 2),
+    "-", fn(exp(asmod$estimate[1] + global_z05 * asmod$std.error[1]), dig = 2), "), ",
+    fn(asmod$p.value[1], dig = 3, p = TRUE)
+  ))
+  return(out)
+}
+```
+
+```{r outtaball, cache=cacheon, dependson="outtab"}
+death <- survfunc(
+  time = "outtime_death",
+  event = "out_death",
+  eventname = "All-cause mortality (%)",
+  data = edata %>% filter(survpop),
+  submi = quote(survpop)
+)
+deathcv <- survfunc(
+  time = "outtime_death",
+  event = "out_deathcv",
+  eventname = "CV mortality (%)",
+  data = edata %>% filter(survpop),
+  submi = quote(survpop)
+)
+hosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_hosphf",
+  eventname = "First HF hospitalisation (%)",
+  data = edata %>% filter(survpop),
+  submi = quote(survpop)
+)
+deathhosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_deathhosphf",
+  eventname = "All-cause death/first HF hospitalization (%)",
+  data = edata %>% filter(survpop),
+  submi = quote(survpop)
+)
+
+outall <- rbind(
+  death,
+  deathcv,
+  hosphf,
+  deathhosphf
+)
+
+write.xlsx(outall, paste0("./output/tabs/out_all_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+
+footnote(default_kable(outall,
+  font_size = 6,
+  caption = "Outcomes by RCT - Overall (used in long-term follow-up)"
+) %>%
+  landscape(),
+general = c(
+  "Incidence =  no events, sum py, rate/1000py (95% CI)."
+)
+)
+```
+
+```{r outtabhosp, cache=cacheon, dependson="outtab"}
+death <- survfunc(
+  time = "outtime_death",
+  event = "out_death",
+  eventname = "All-cause mortality (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
+  submi = quote(survpop & num_dmPtype == "Hospital")
+)
+deathcv <- survfunc(
+  time = "outtime_death",
+  event = "out_deathcv",
+  eventname = "CV mortality (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
+  submi = quote(survpop & num_dmPtype == "Hospital")
+)
+hosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_hosphf",
+  eventname = "First HF hospitalisation (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
+  submi = quote(survpop & num_dmPtype == "Hospital")
+)
+deathhosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_deathhosphf",
+  eventname = "All-cause death/first HF hospitalization (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
+  submi = quote(survpop & num_dmPtype == "Hospital")
+)
+
+outall <- rbind(
+  death,
+  deathcv,
+  hosphf,
+  deathhosphf
+)
+
+write.xlsx(outall, paste0("./output/tabs/out_hosp_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+
+footnote(default_kable(outall,
+  font_size = 6,
+  caption = "Outcomes by RCT - Inpatient (used in long-term follow-up)"
+) %>%
+  landscape(),
+general = c(
+  "Incidence =  no events, sum py, rate/1000py (95% CI)."
+)
+)
+```
+
+```{r outtabout, cache=cacheon, dependson="outtab"}
+death <- survfunc(
+  time = "outtime_death",
+  event = "out_death",
+  eventname = "All-cause mortality (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
+  submi = quote(survpop & num_dmPtype == "Outpatient")
+)
+deathcv <- survfunc(
+  time = "outtime_death",
+  event = "out_deathcv",
+  eventname = "CV mortality (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
+  submi = quote(survpop & num_dmPtype == "Outpatient")
+)
+hosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_hosphf",
+  eventname = "First HF hospitalisation (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
+  submi = quote(survpop & num_dmPtype == "Outpatient")
+)
+deathhosphf <- survfunc(
+  time = "outtime_hosphf",
+  event = "out_deathhosphf",
+  eventname = "All-cause death/first HF hospitalization (%)",
+  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
+  submi = quote(survpop & num_dmPtype == "Outpatient")
+)
+
+outall <- rbind(
+  death,
+  deathcv,
+  hosphf,
+  deathhosphf
+)
+
+write.xlsx(outall, paste0("./output/tabs/out_out_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+
+footnote(default_kable(outall,
+  font_size = 6,
+  caption = "Outcomes by RCT - Outpatient (used in long-term follow-up)"
+) %>%
+  landscape(),
+general = c(
+  "Incidence =  no events, sum py, rate/1000py (95% CI)."
+)
+)
+```

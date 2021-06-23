@@ -1,0 +1,93 @@
+```{r km, cache=cacheon}
+
+kmfunc <- function(time, event, eventname, yposplus = rep(0, 2)) {
+  fit <- survfit(formula(paste0("Surv(", time, ",", event, "== 1) ~ num_dmRCT")),
+    data = edata %>% filter(survpop)
+  )
+
+  # c(bottom, left, top, right)
+  par(mar = c(6, 4, 1, 4) + 0.1)
+  plot(fit,
+    fun = "event",
+    ylab = eventname,
+    xscale = 30.5,
+    yscale = 100,
+    col = global_kicols,
+    mark.time = FALSE,
+    bty = "n",
+    xlim = c(0, 12 * 30),
+    ylim = c(0, .5),
+    xlab = "Months",
+    axes = F,
+    lwd = 3,
+    lty = c(1, 2, 3),
+    xaxs = "i", yaxs = "i"
+  )
+
+  axis(2, seq(0, 0.5, 0.1), seq(0, 50, 10), las = 2)
+  axis(1, at = seq(0, 12, 1) * 30, seq(0, 12, 1))
+
+  yposm <- 1 - summary(fit, 364)$surv
+
+  ylabs <- bind_cols(
+    ypos = c(yposm + yposplus),
+    ytext = c("No RCT", "RCT")
+  )
+
+  mtext(
+    side = 4,
+    line = .2,
+    at = ylabs$ypos,
+    ylabs$ytext,
+    las = 1
+  )
+
+  mtext("No. at risk", side = 1, line = 3, at = -310, adj = 0, cex = 1)
+
+  mtext("No", side = 1, line = 4, at = -290, adj = 0, cex = 1)
+  mtext("Yes", side = 1, line = 5, at = -290, adj = 0, cex = 1)
+
+  nrisk <- summary(fit, seq(0, 12, 2) * 30)$n.risk
+
+  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[1:7], line = 3, tick = FALSE, cex.axis = 1)
+  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[8:14], line = 4, tick = FALSE, cex.axis = 1)
+
+  # text(20, 0.65, paste0("P-value ", pm), pos = 4)
+}
+```
+
+```{r kmdeath, fig.cap="1-KM All-cause mortality", cache=cacheon, dependson="km"}
+kmfunc(
+  time = "outtime_death",
+  event = "out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r kmdeathcv, fig.cap="1-KM CV mortality", cache=cacheon, dependson="km"}
+kmfunc(
+  time = "outtime_death",
+  event = "out_deathcv",
+  eventname = "CV mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r km1hfhosp, fig.cap="First HF hospitalization", cache=cacheon, dependson="km"}
+kmfunc(
+  time = "outtime_hosphf",
+  event = "out_hosphf",
+  eventname = "First HF hospitalisation (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r kmacdeath1hfhosp, fig.cap="All-cause death or first HF hospitalization", cache=cacheon, dependson="kmfunc"}
+kmfunc(
+  time = "outtime_hosphf",
+  event = "out_deathhosphf",
+  eventname = "All-cause death/first HF hospitalization (%)",
+  yposplus = c(0, 0)
+)
+```
