@@ -25,7 +25,7 @@ edata <- edata %>%
   )
 
 flow <- rbind(flow, c(
-  ". Not lost to follow-up and not negative follow-up times (used in outcome analysis)",
+  ". Not lost to follow-up and not negative follow-up times (analysis population)",
   nrow(edata %>% filter(survpop))
 ))
 

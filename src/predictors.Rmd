@@ -1,76 +1,110 @@
 ```{r pred, cache=cacheon}
 
-predfunc <- function(sub, tabname) {
-  ormod <- hf.glm_mids(formula(paste0("num_dmRCT == 'Yes' ~ ", paste(modvars, collapse = " + "))),
-    data = imp, subset = sub
-  )
+ormod <- with(imp, glm(formula(paste0("num_dmRCT == 'Yes' ~ ", paste(modvars, collapse = " + "))),
+  family = binomial(link = "logit")
+))
 
-  sormod <- summary(pool(ormod))
+sormod <- summary(pool(ormod))
 
-  nval <- length(sormod$term)
-  orforest <- data.frame(
-    var = as.character(sormod$term[2:nval]),
-    logor = sormod$estimate[2:nval],
-    lci = sormod$estimate[2:nval] - global_z05 * sormod$std.error[2:nval],
-    uci = sormod$estimate[2:nval] + global_z05 * sormod$std.error[2:nval],
-    p = fn(sormod$p.value[2:nval], dig = 3, p = TRUE)
-  )
+nval <- length(sormod$term)
+orforest <- data.frame(
+  var = as.character(sormod$term[2:nval]),
+  logor = sormod$estimate[2:nval],
+  lci = sormod$estimate[2:nval] - global_z05 * sormod$std.error[2:nval],
+  uci = sormod$estimate[2:nval] + global_z05 * sormod$std.error[2:nval],
+  p = fn(sormod$p.value[2:nval], dig = 3, p = TRUE)
+) %>%
+  mutate(orp = paste0(fn(exp(logor), 1), " (", fn(exp(lci), 1), "-", fn(exp(uci), 1), "), ", p)) %>%
+  # remove = Yes
+  mutate(Variable = str_replace(var, fixed("Yes"), ""))
 
-  orforest <- orforest %>%
-    # remove = Yes
-    mutate(Variable = str_replace(var, fixed("Yes"), ""))
-
-  orforest <- orforest %>%
-    mutate(
-      modnameforest = case_when(
-        Variable == "shf_indexyear011-2018" ~ "Index year 2011-2018 vs 2000-2010",
-        Variable == "shf_nyhaIII-IV" ~ "NYHA III-IV vs I",
-        Variable == "shf_nyhaII" ~ "NYHA II vs I",
-        Variable == "scb_famtypeLiving alone" ~ "Living alone",
-        Variable == "shf_deviceCRT/ICD" ~ "CRT/ICD",
-        Variable == "shf_durationhf>6mo" ~ "Duration HF > 6mo",
-        Variable == "shf_age>=75" ~ "Age>=75 vs <75",
-        Variable == "scb_educationUniversity" ~ "University vs Compulsory school",
-        Variable == "scb_educationSecondary school" ~ "Secondary vs Compulsory school",
-        Variable == "shf_bmi>=30" ~ "BMI>=30 vs <30",
-        Variable == "shf_followuplocationPrimary care/Other" ~ "Follow-up PC/Other vs Hospital",
-        Variable == "shf_efHFmrEF" ~ "HFmrEF vs HFrEF",
-        Variable == "shf_sexMale" ~ "Male vs Female",
-        Variable == "shf_efHFpEF" ~ "HFpEF vs HFrEF",
-        Variable == "scb_dispincomeAbove medium" ~ "Income Above vs below medium",
-        Variable == "shf_map>90" ~ "MAP>90 vs <=90",
-        Variable == "shf_gfrckdepi<60" ~ "eGFR<60 vs >=60",
-        Variable == "shf_heartrate>70" ~ "Heart rate>70 vs <=70",
-        Variable == "shf_ntprobnpAbove medium" ~ "NT-proBNP Above vs below medium",
-        TRUE ~ Variable
-      )
+orforest <- orforest %>%
+  mutate(
+    modnameforest = case_when(
+      Variable == "shf_indexyear011-2018" ~ "Index year 2011-2018 vs 2000-2010",
+      Variable == "shf_nyhaIII-IV" ~ "NYHA III-IV vs I",
+      Variable == "shf_nyhaII" ~ "NYHA II vs I",
+      Variable == "scb_famtypeLiving alone" ~ "Living alone",
+      Variable == "shf_deviceCRT/ICD" ~ "CRT/ICD",
+      Variable == "shf_durationhf>6mo" ~ "Duration HF > 6mo",
+      Variable == "shf_age>=75" ~ "Age>=75 vs <75",
+      Variable == "scb_educationUniversity" ~ "University vs Compulsory school",
+      Variable == "scb_educationSecondary school" ~ "Secondary vs Compulsory school",
+      Variable == "shf_bmi>=30" ~ "BMI>=30 vs <30",
+      Variable == "shf_followuplocationPrimary care/Other" ~ "Follow-up PC/Other vs Hospital",
+      Variable == "shf_efHFmrEF" ~ "HFmrEF vs HFrEF",
+      Variable == "shf_sexMale" ~ "Male vs Female",
+      Variable == "shf_efHFpEF" ~ "HFpEF vs HFrEF",
+      Variable == "scb_dispincomeAbove medium" ~ "Income Above vs below medium",
+      Variable == "shf_map>90" ~ "MAP>90 vs <=90",
+      Variable == "shf_gfrckdepi<60" ~ "eGFR<60 vs >=60",
+      Variable == "shf_heartrate>70" ~ "Heart rate>70 vs <=70",
+      Variable == "shf_ntprobnpAbove medium" ~ "NT-proBNP Above vs below medium",
+      TRUE ~ Variable
     )
+  )
+```
 
-  ortab <- orforest %>%
-    mutate(orci = paste0(fn(exp(logor), 1), " (", fn(exp(lci), 1), "-", fn(exp(uci), 1), ")")) %>%
-    select(modnameforest, orci, p)
 
-  names(ortab) <- c("Variable", "OR (95% CI)", "p-value")
+```{r predplot, fig.cap="Associations with trial participation", cache=cacheon, dependson="pred"}
 
-  default_kable(ortab,
-    font_size = 6,
-    caption = paste0("Associations with RCT - ", tabname),
-    longtable = TRUE
+# exp(min(orforest$lci))
+# exp(max(orforest$uci))
+
+orforest <- orforest %>% arrange(n():1)
+
+cextext <- 0.8
+
+# c(bottom, left, top, right)
+par(mar = c(4, 18, 1, 0) + 0.2)
+plot(orforest$logor, 1:nrow(orforest),
+  xlab = "",
+  xlim = c(
+    log(0.3),
+    log(2)
+  ),
+  ylim = c(1, nrow(orforest) + 1),
+  axes = FALSE,
+  ylab = NA,
+  cex.lab = 1.1,
+  main = NA,
+  cex = 1,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+
+for (i in 1:nrow(orforest)) {
+  matplot(c(orforest$lci[i], orforest$uci[i]), c(i, i),
+    type = "l", add = TRUE, col = global_kicols[1], cex = 2
   )
 }
-```
 
-```{r predtab, cache=cacheon, dependson="pred"}
+matplot(c(0, 0), c(-1, nrow(orforest) + 0.5), type = "l", lty = 3, add = TRUE, col = "black")
 
-predfunc(sub = quote(!is.na(patientid)), "Overall")
-```
+axis(1,
+  cex.axis = cextext, at = log(seq(0.5, 2.0, 0.5)),
+  labels = seq(0.5, 2.0, 0.5)
+)
 
-```{r predtabhosp, cache=cacheon, dependson="pred"}
+axis(2,
+  at = 1:nrow(orforest),
+  labels = orforest$modnameforest,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 17, hadj = 0
+)
 
-predfunc(sub = quote(num_dmPtype == "Hospital"), "Inpatient")
-```
+axis(2,
+  at = 1:(nrow(orforest) + 1),
+  labels = c(orforest$orp, "OR (95% CI), p"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 0, hadj = 0.5
+)
 
-```{r predtabout, cache=cacheon, dependson="pred"}
+axis(1,
+  at = 0.02, cex.axis = cextext,
+  labels = "TP less likely    TP more likely", line = 1, tick = FALSE
+)
 
-predfunc(sub = quote(num_dmPtype == "Outpatient"), "Outpatient")
+text(0, (nrow(orforest) + 1), "OR (95% CI)", cex = cextext)
 ```

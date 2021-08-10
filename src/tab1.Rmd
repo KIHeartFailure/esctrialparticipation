@@ -83,33 +83,24 @@ tab1func <- function(data, tabvars = tab1vars,
 }
 ```
 
-```{r tab1all, cache=cacheon, dependson="tab1"}
-tab1func(data = edata, tabname = "All")
-```
-
-\clearpage
-
 ```{r tab1surv, cache=cacheon, dependson="tab1"}
-tab1func(data = edata %>% filter(survpop), tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)")
+tab1func(data = edata %>% filter(survpop), tabname = "Analysis population")
 ```
 
 \clearpage
 
-```{r tab2all, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = edata, tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "All"
-)
+```{r tab1all, cache=cacheon, dependson="tab1"}
+tab1func(data = edata, tabname = "All, for supplementary")
 ```
 
 \clearpage
 
-```{r tab2surv, cache=cacheon, dependson="tab1"}
+```{r tabmedsurv, cache=cacheon, dependson="tab1"}
 tab1func(
-  data = edata %>% filter(survpop), tabvars = tab2vars,
-  tabnamebase = "Interventions/procedures/scores - ",
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)"
+  data = edata %>% filter(survpop),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - ",
+  tabname = "Analysis population"
 )
 ```
 
@@ -120,17 +111,6 @@ tab1func(
   data = edata,
   tabvars = tabmedvars,
   tabnamebase = "Medications by trial participation - ",
-  tabname = "All"
-)
-```
-
-\clearpage
-
-```{r tabmedsurv, cache=cacheon, dependson="tab1"}
-tab1func(
-  data = edata %>% filter(survpop),
-  tabvars = tabmedvars,
-  tabnamebase = "Medications by trial participation - ",
-  tabname = "Not lost to follow-up and alive and discharge (used in long-term outcome analysis)"
+  tabname = "All, for supplementary"
 )
 ```

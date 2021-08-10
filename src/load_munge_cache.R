@@ -11,7 +11,6 @@ ProjectTemplate::reload.project(
 )
 
 ProjectTemplate::cache("tab1vars")
-ProjectTemplate::cache("tab2vars")
 ProjectTemplate::cache("tabmedvars")
 ProjectTemplate::cache("modvars")
 

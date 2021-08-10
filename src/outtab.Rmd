@@ -1,5 +1,5 @@
 ```{r outtab, cache=cacheon}
-survfunc <- function(time, event, eventname, data, submi) {
+survfunc <- function(time, event, eventname, data) {
   out <- data.frame(matrix(NA, ncol = 4, nrow = 3))
 
   out[1, 1] <- eventname
@@ -53,10 +53,9 @@ survfunc <- function(time, event, eventname, data, submi) {
 
   out[3, 2] <- "Adjusted HR (95% CI), p-value"
 
-  amod <- hf.coxph.mids(formula(paste0(
-    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ",
-    paste(modvars, collapse = " + ")
-  )), data = imp, subset = submi)
+  amod <- with(imp, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ", paste(modvars, collapse = " + ")
+  ))))
 
   ## df the number of events minus the regression coefficients.
   ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
@@ -80,143 +79,25 @@ death <- survfunc(
   time = "outtime_death",
   event = "out_death",
   eventname = "All-cause mortality (%)",
-  data = edata %>% filter(survpop),
-  submi = quote(survpop)
-)
-deathcv <- survfunc(
-  time = "outtime_death",
-  event = "out_deathcv",
-  eventname = "CV mortality (%)",
-  data = edata %>% filter(survpop),
-  submi = quote(survpop)
+  data = edata %>% filter(survpop)
 )
 hosphf <- survfunc(
   time = "outtime_hosphf",
   event = "out_hosphf",
   eventname = "First HF hospitalisation (%)",
-  data = edata %>% filter(survpop),
-  submi = quote(survpop)
-)
-deathhosphf <- survfunc(
-  time = "outtime_hosphf",
-  event = "out_deathhosphf",
-  eventname = "All-cause death/first HF hospitalization (%)",
-  data = edata %>% filter(survpop),
-  submi = quote(survpop)
+  data = edata %>% filter(survpop)
 )
 
 outall <- rbind(
   death,
-  deathcv,
-  hosphf,
-  deathhosphf
+  hosphf
 )
 
 write.xlsx(outall, paste0("./output/tabs/out_all_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
 
 footnote(default_kable(outall,
   font_size = 6,
-  caption = "Outcomes by RCT - Overall (used in long-term follow-up)"
-) %>%
-  landscape(),
-general = c(
-  "Incidence =  no events, sum py, rate/1000py (95% CI)."
-)
-)
-```
-
-```{r outtabhosp, cache=cacheon, dependson="outtab"}
-death <- survfunc(
-  time = "outtime_death",
-  event = "out_death",
-  eventname = "All-cause mortality (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
-  submi = quote(survpop & num_dmPtype == "Hospital")
-)
-deathcv <- survfunc(
-  time = "outtime_death",
-  event = "out_deathcv",
-  eventname = "CV mortality (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
-  submi = quote(survpop & num_dmPtype == "Hospital")
-)
-hosphf <- survfunc(
-  time = "outtime_hosphf",
-  event = "out_hosphf",
-  eventname = "First HF hospitalisation (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
-  submi = quote(survpop & num_dmPtype == "Hospital")
-)
-deathhosphf <- survfunc(
-  time = "outtime_hosphf",
-  event = "out_deathhosphf",
-  eventname = "All-cause death/first HF hospitalization (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Hospital"),
-  submi = quote(survpop & num_dmPtype == "Hospital")
-)
-
-outall <- rbind(
-  death,
-  deathcv,
-  hosphf,
-  deathhosphf
-)
-
-write.xlsx(outall, paste0("./output/tabs/out_hosp_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
-
-footnote(default_kable(outall,
-  font_size = 6,
-  caption = "Outcomes by RCT - Inpatient (used in long-term follow-up)"
-) %>%
-  landscape(),
-general = c(
-  "Incidence =  no events, sum py, rate/1000py (95% CI)."
-)
-)
-```
-
-```{r outtabout, cache=cacheon, dependson="outtab"}
-death <- survfunc(
-  time = "outtime_death",
-  event = "out_death",
-  eventname = "All-cause mortality (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
-  submi = quote(survpop & num_dmPtype == "Outpatient")
-)
-deathcv <- survfunc(
-  time = "outtime_death",
-  event = "out_deathcv",
-  eventname = "CV mortality (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
-  submi = quote(survpop & num_dmPtype == "Outpatient")
-)
-hosphf <- survfunc(
-  time = "outtime_hosphf",
-  event = "out_hosphf",
-  eventname = "First HF hospitalisation (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
-  submi = quote(survpop & num_dmPtype == "Outpatient")
-)
-deathhosphf <- survfunc(
-  time = "outtime_hosphf",
-  event = "out_deathhosphf",
-  eventname = "All-cause death/first HF hospitalization (%)",
-  data = edata %>% filter(survpop & num_dmPtype == "Outpatient"),
-  submi = quote(survpop & num_dmPtype == "Outpatient")
-)
-
-outall <- rbind(
-  death,
-  deathcv,
-  hosphf,
-  deathhosphf
-)
-
-write.xlsx(outall, paste0("./output/tabs/out_out_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
-
-footnote(default_kable(outall,
-  font_size = 6,
-  caption = "Outcomes by RCT - Outpatient (used in long-term follow-up)"
+  caption = "Outcomes by TP"
 ) %>%
   landscape(),
 general = c(

@@ -100,28 +100,14 @@ in the imputation model.
 
 ```
 
-QUESTION: 
-
-- For all patients there are multiple registrations 
-of for example bp. In those cases, which values do you want to include?
-- don't understand: you write: "MRA doses are depicted in spironolactone/eplerenone equivalents." Should ther be any conversion?
-- For rasi (inc arni) it is not simple to convert arni/acei/arb to ONE contraindicates/not tolerated variable (the different variables will have different reasons). Could you take a look at what is presented now and see if that will suffice? 
-- regarding the yes/not toleated/contraindicated variable. Just did for bbl at visit/discahrge for the moment, could you check and see if this is what you are after? I am a bit worried that it will be difficult to interpret. 
-
 Note 
 
-- for the follow-up medications if no medications at all are given there is not an option to give reason for not given. 
 - for substances = "Other" no doses are shown (can't be converted)
 - for patients taking more than one acei/arb/arni the max dose will be presented (not summeraized). 
 
 ## Assocation between trial participation and characteristics
 
-Performed using logistic regression models.
-
-QUESTION: 
-
-- Which variables should be included? Any categorization ect?
-- Do you want this as a table with uni and multi ORs ect or as a forest plot?
+Performed using logistic regression models on the analysis population (patients with follow-up data).
 
 ```{r, child = "../src/predictors.Rmd"}
 
@@ -129,17 +115,17 @@ QUESTION:
 
 ## Outcome analysis
 
+The outcome analysis is performed on the analysis population (patients with follow-up data).
+
 The following outcomes are considered: 
 
 - All cause mortality
-- CV mortality
 - First HF hospitalisation
-- All cause mortality/first HF hospitalisation
 
 Time is from date of discharge, or if this is missing, date of admission and 
 censored at death not defined as an event or follow-up.  
 
-The outcomes are presented with the 1 - Kaplan-Meier curves. Cox proportional hazards regressions were 
+The outcomes are presented with the 1 - Kaplan-Meier curves for outcomes without competing events (death) and cumulative incidence curves for outcomes with competing events (first hf hospitalization). Cox proportional hazards regressions were 
 used to model the time to first event analysis. 
 
 The median (min-max) follow-up for the long-term outcomes is 
@@ -161,17 +147,21 @@ The median (min-max) follow-up for the long-term outcomes is
 
 ```
 
-QUESTION: 
-
-- Which variabels should be included? 
-- I can do Forest instead of table for outcomes when the variables are decided upon. 
-
 ### Assumptions
 
 The proportional hazards assumption was investigated using the scaled Schoenfeld 
 residuals (cox.zph in [@survival-package]) for the primary outcome. 
 Possible outliers were visually inspected by plotting the dfbetas. 
 => XXXX. 
+
+### Subgroups
+
+Subgroup analysis are performed for selected variables. 
+Performed using interaction effects on the patients in the analysis population. 
+
+```{r, child = "../src/subout.Rmd"}
+
+```
 
 \clearpage
 \newpage

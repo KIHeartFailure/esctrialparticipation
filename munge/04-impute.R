@@ -3,7 +3,8 @@
 # Impute missing values ---------------------------------------------------
 
 edataforimp <- edata %>%
-  select(patientid, num_dmPtype, survpop, num_dmRCT, !!!syms(modvars), starts_with("out"))
+  filter(survpop) %>% # only impute analysis pop that will be used for models
+  select(patientid, num_dmPtype, num_dmRCT, !!!syms(modvars), starts_with("out"))
 
 noimpvars <- names(edataforimp)[!names(edataforimp) %in% modvars]
 
