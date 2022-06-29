@@ -1,0 +1,86 @@
+```{r evalue, cache=cacheon}
+
+evalfunc <- function(time, event, eventname) {
+  ## adjusted
+  amod <- with(imp, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 1) ~ num_dmRCT +",
+    paste(modvarscox, collapse = " + ")
+  ))))
+
+  ## df the number of events minus the regression coefficients.
+  ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+  asmod <- summary(pool(amod,
+    dfcom =
+      (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+  ))
+
+  evalc <- evalue(HR(exp(asmod$estimate[1]), rare = FALSE),
+    lo = exp(asmod$estimate[1] - global_z05 * asmod$std.error[1]),
+    hi = exp(asmod$estimate[1] + global_z05 * asmod$std.error[1])
+  )
+
+  oute <- bind_cols(c("Model estimates", "E-values"), as_tibble(fn(evalc, 2)))
+
+  outmod <- tibble(
+    Variable = asmod$term,
+    hr = paste0(
+      fn(exp(asmod$estimate), dig = 2),
+      " (", fn(exp(asmod$estimate - global_z05 * asmod$std.error), dig = 2),
+      "-", fn(exp(asmod$estimate + global_z05 * asmod$std.error), dig = 2), "), ",
+      fn(asmod$p.value, dig = 3, p = TRUE)
+    )
+  )
+
+  out <- list(oute = oute, outmod = outmod)
+
+  return(out)
+}
+
+death <- evalfunc(
+  time = "outtime_death",
+  event = "out_death",
+  eventname = "All-cause mortality"
+)
+hosphf <- evalfunc(
+  time = "outtime_hosphf",
+  event = "out_hosphf",
+  eventname = "First HF hospitalisation"
+)
+```
+
+```{r evalueprint1, cache=cacheon, dependson="evalue"}
+oute <- bind_cols(
+  death$oute,
+  hosphf$oute[, 2:4]
+)
+
+colnames(oute) <- c("", rep(c("RR*", "Lower CI", "Upper CI"), 2))
+
+footnote(default_kable(oute,
+  scale_down = F,
+  font_size = 8,
+  caption = "Residual confounding - E-value"
+) %>%
+  add_header_above(c(" " = 1, "All-cause mortality" = 3, "HF hospitalization" = 3)),
+symbol = "Approximate conversions of the HR to RR are applied, assuming a non-rare outcome"
+)
+```
+
+\clearpage
+
+```{r evalueprint2, cache=cacheon, dependson="evalue"}
+outmod <- bind_cols(
+  death$outmod,
+  hosphf$outmod[, 2]
+)
+
+colnames(outmod) <- c("Variable", rep("HR (95% CI), p-value", 2))
+
+default_kable(outmod,
+  scale_down = F,
+  font_size = 8,
+  escape = T,
+  caption = "HR for variables included in the model (for comparison with the magnitude of the E-value)"
+) %>%
+  add_header_above(c(" " = 1, "All-cause mortality" = 1, "HF hospitalization" = 1))
+```

@@ -21,14 +21,14 @@ survfunc <- function(time, event, eventname, data) {
       s = sum(!!sym(time) / 365.25),
       .groups = "rowwise"
     )
-  r <- pois.exact(x = ev$ev, pt = s$s / 1000)
+  r <- pois.exact(x = ev$ev, pt = s$s / 100)
 
   out[1, 3:4] <- paste0(
     ev$ev, ", ",
     fn(s$s, dig = 0), ", ",
-    fn(r$rate, dig = 0), " (",
-    fn(r$lower, dig = 0), "-",
-    fn(r$upper, dig = 0), ")"
+    fn(r$rate, dig = 1), " (",
+    fn(r$lower, dig = 1), "-",
+    fn(r$upper, dig = 1), ")"
   )
 
   # cox regressions
@@ -54,7 +54,7 @@ survfunc <- function(time, event, eventname, data) {
   out[3, 2] <- "Adjusted HR (95% CI), p-value"
 
   amod <- with(imp, coxph(formula(paste0(
-    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ", paste(modvars, collapse = " + ")
+    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ", paste(modvarscox, collapse = " + ")
   ))))
 
   ## df the number of events minus the regression coefficients.
@@ -78,13 +78,13 @@ survfunc <- function(time, event, eventname, data) {
 death <- survfunc(
   time = "outtime_death",
   event = "out_death",
-  eventname = "All-cause mortality (%)",
+  eventname = "All-cause mortality",
   data = edata %>% filter(survpop)
 )
 hosphf <- survfunc(
   time = "outtime_hosphf",
   event = "out_hosphf",
-  eventname = "First HF hospitalisation (%)",
+  eventname = "First HF hospitalisation",
   data = edata %>% filter(survpop)
 )
 
@@ -93,15 +93,14 @@ outall <- rbind(
   hosphf
 )
 
-write.xlsx(outall, paste0("./output/tabs/out_all_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+write.xlsx(outall, paste0("./output/tabs/Outcomes by TP_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
 
 footnote(default_kable(outall,
   font_size = 6,
   caption = "Outcomes by TP"
-) %>%
-  landscape(),
+),
 general = c(
-  "Incidence =  no events, sum py, rate/1000py (95% CI)."
+  "Incidence =  no events, sum py, rate/100py (95% CI)."
 )
 )
 ```

@@ -13,7 +13,7 @@ survsubfunc <- function(time, event, xvar, xvarname) {
     ## adjusted individual covariates
     amod <- with(imp, coxph(formula(paste0(
       "Surv(", time, ",", event, " == 1) ~ num_dmRCT * relevel(", xvar, ", ref = '", levs[i], "') + ",
-      paste(modvars[modvars != xvar], collapse = " + ")
+      paste(modvarscox[modvarscox != xvar], collapse = " + ")
     ))))
 
     ## df the number of events minus the regression coefficients.
@@ -40,7 +40,7 @@ survsubfunc <- function(time, event, xvar, xvarname) {
       } else {
         amodnoint <- with(imp, coxph(formula(paste0(
           "Surv(", time, ",", event, " == 1) ~ num_dmRCT + relevel(", xvar, ", ref = '", levs[i], "') + ",
-          paste(modvars[modvars != xvar], collapse = " + ")
+          paste(modvarscox[modvarscox != xvar], collapse = " + ")
         ))))
 
         int <- D1(amod, amodnoint)
@@ -65,7 +65,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "d_HFdiagnosis",
-      xvarname = "Duration of HF"
+      xvarname = "HF History (months)"
     )
   )
   forestdata <- rbind(
@@ -92,7 +92,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "num_dmgender",
-      xvarname = "Gender"
+      xvarname = "Sex"
     )
   )
   forestdata <- rbind(
@@ -101,7 +101,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "num_CKDEPI_cat",
-      xvarname = "eGFR"
+      xvarname = "eGFR (ml/min/1.73 m2)"
     )
   )
   forestdata <- rbind(
@@ -110,7 +110,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "num_dmBp1_cat",
-      xvarname = "SBP"
+      xvarname = "Systolic BP (mmHg)"
     )
   )
   forestdata <- rbind(
@@ -119,7 +119,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "num_Nyha_cat",
-      xvarname = "NYHA"
+      xvarname = "NYHA class"
     )
   )
   forestdata <- rbind(
@@ -164,7 +164,7 @@ survsubfunc2 <- function(time2, event2) {
       time = time2,
       event = event2,
       xvar = "num_dmAfib_c1",
-      xvarname = "AF"
+      xvarname = "Atrial Fibrillation/Flutter"
     )
   )
 }
@@ -172,36 +172,36 @@ survsubfunc2 <- function(time2, event2) {
 
 ```{r outsubplot, cache=cacheon, dependson="outsub"}
 plotforest <- function(forestdata) {
-  cextext <- 0.9
+  cextext <- 1
 
   minmy <- round(exp(min(forestdata$lci, na.rm = T)), 1)
   maxmy <- round(exp(max(forestdata$uci, na.rm = T)), 1)
 
   # c(bottom, left, top, right)
-  par(mar = c(5, 17, 1, 2) + 0.2)
+  par(mar = c(3, 17, 0, 0.5) + 0.2)
 
 
   plot(rev(forestdata$coef), 1:nrow(forestdata),
-    cex = 1.2,
+    cex = 2,
     xlim = c(
       log(minmy),
       log(maxmy)
     ),
     xlab = NA,
-    ylim = c(1, nrow(forestdata) + .4),
+    ylim = c(1, nrow(forestdata)),
     axes = FALSE,
     ylab = NA,
     main = NA,
     type = "p",
     pch = 22,
-    bg = global_kicols[1],
-    col = global_kicols[1]
+    bg = global_cols[3],
+    col = global_cols[3]
   )
 
   for (i in 1:nrow(forestdata)) {
     if (!is.na(rev(forestdata$lci)[i])) {
       matplot(c(rev(forestdata$lci)[i], rev(forestdata$uci)[i]), c(i, i),
-        type = "l", add = TRUE, col = global_kicols[1], cex = 2
+        type = "l", add = TRUE, col = global_cols[3], lwd = 2
       )
     }
   }
@@ -213,42 +213,55 @@ plotforest <- function(forestdata) {
   axismy2[!axismy %in% c(minmy, maxmy)] <- NA
 
   axis(1,
-    cex.axis = cextext, at = log(axismy),
-    labels = axismy2
-  )
-  axis(1,
-    cex.axis = cextext, at = log(1),
-    labels = 1
+    cex.axis = cextext, at = log(c(axismy, 1)),
+    labels = c(axismy2, 1)
   )
 
   axis(2,
-    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
-    labels = c(rev(forestdata$Subgroup), "Subgroup"),
+    at = nrow(forestdata) + 1,
+    labels = "Subgroup",
+    cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0, font = 2
+  )
+  forestdata <- forestdata %>%
+    mutate(
+      Subgroup = str_replace_all(Subgroup, ">=", "\u2265"),
+      Subgroup = str_replace_all(Subgroup, "<=", "\u2264"),
+      Subgroup = str_replace_all(Subgroup, "<12", "12"),
+      Subgroup = str_replace_all(Subgroup, ">12", "12")
+    )
+
+  axis(2,
+    at = 1:nrow(forestdata),
+    labels = c(rev(forestdata$Subgroup)),
     cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
   )
 
   axis(2,
-    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
-    labels = c(rev(forestdata$`HR (95% CI)`), "HR (95% CI)"),
+    at = nrow(forestdata) + 1,
+    labels = "HR (95% CI)",
+    cex.axis = cextext, tick = FALSE, las = 2, line = 6, hadj = 0.5, font = 2
+  )
+  axis(2,
+    at = 1:nrow(forestdata),
+    labels = rev(forestdata$`HR (95% CI)`),
     cex.axis = cextext, tick = FALSE, las = 2, line = 6, hadj = 0.5
   )
 
   axis(2,
-    at = c(1:nrow(forestdata), nrow(forestdata) + 1),
-    labels = c(rev(forestdata$p), "P-value"),
+    at = nrow(forestdata) + 1,
+    labels = "P interaction",
+    cex.axis = cextext, tick = FALSE, las = 1, line = 0.5, hadj = 0.5, font = 2
+  )
+  axis(2,
+    at = 1:nrow(forestdata),
+    labels = rev(forestdata$p),
     cex.axis = cextext, tick = FALSE, las = 1, line = 0.5, hadj = 0.5
   )
 
   axis(1,
-    at = 0.1, cex.axis = cextext,
-    labels = "TP   Not TP", line = 1, tick = FALSE
+    at = (log(maxmy) + log(minmy)) / 2, cex.axis = cextext,
+    labels = "HR (95% CI)", line = 1, tick = FALSE
   )
-  axis(1,
-    at = 0, cex.axis = cextext,
-    labels = "better", line = 2, tick = FALSE
-  )
-
-  text(0, (nrow(forestdata) + 1), "HR (95% CI)", cex = cextext)
 }
 ```
 

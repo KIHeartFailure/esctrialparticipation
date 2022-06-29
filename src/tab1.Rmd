@@ -45,7 +45,7 @@ tab1func <- function(data, tabvars = tab1vars,
     )
 
   write.xlsx(tab %>%
-    select(Variable, Missing:p), paste0("./output/tabs/tab1_", tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+    select(Variable, Missing:p), paste0("./output/tabs/tab1_", tabnamebase, tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
   # footnotes
   tab <- tab %>%
@@ -111,6 +111,72 @@ tab1func(
   data = edata,
   tabvars = tabmedvars,
   tabnamebase = "Medications by trial participation - ",
+  tabname = "All, for supplementary"
+)
+```
+
+\clearpage
+
+```{r tabmedsurvref, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(survpop & num_Ef_cat == "<=40%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF <=40 - ",
+  tabname = "Analysis population"
+)
+```
+
+\clearpage
+
+```{r tabmedallref, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(num_Ef_cat == "<=40%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF <=40 - ",
+  tabname = "All, for supplementary"
+)
+```
+
+\clearpage
+
+```{r tabmedsurvmref, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(survpop & num_Ef_cat == "41-49%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF 41-49 - ",
+  tabname = "Analysis population"
+)
+```
+
+\clearpage
+
+```{r tabmedallmref, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(num_Ef_cat == "41-49%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF 41-49 - ",
+  tabname = "All, for supplementary"
+)
+```
+
+\clearpage
+
+```{r tabmedsurvpef, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(survpop & num_Ef_cat == ">=50%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF >=50 - ",
+  tabname = "Analysis population"
+)
+```
+
+\clearpage
+
+```{r tabmedallpef, cache=cacheon, dependson="tab1"}
+tab1func(
+  data = edata %>% filter(num_Ef_cat == ">=50%"),
+  tabvars = tabmedvars,
+  tabnamebase = "Medications by trial participation - LVEF >=50 - ",
   tabname = "All, for supplementary"
 )
 ```

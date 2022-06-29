@@ -1,106 +1,92 @@
 ```{r km, cache=cacheon}
 
-kmfunc <- function(time, event, eventcr = NULL, eventname, yposplus = rep(0, 2), ci = FALSE) {
+kmfunc <- function(time, event, eventname, eventrec, yposplus = rep(0.015, 2)) {
   fits <- survfit(formula(paste0("Surv(", time, ",", event, "== 1) ~ num_dmRCT")),
     data = edata %>% filter(survpop)
   )
 
-  if (!is.null(eventcr)) {
-    fit <- cuminc(
-      ftime = edata %>% filter(survpop) %>% pull(!!sym(time)),
-      fstatus = edata %>% filter(survpop) %>% pull(!!sym(eventcr)),
-      cencode = 0,
-      group = edata %>% filter(survpop) %>% pull(num_dmRCT)
-    )
+  # cox model
+  amod <- with(imp, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 1) ~ num_dmRCT + ", paste(modvarscox, collapse = " + ")
+  ))))
 
-    # c(bottom, left, top, right)
-    par(mar = c(6, 4.5, 1, 4) + 0.1)
+  ## df the number of events minus the regression coefficients.
+  ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+  asmod <- summary(pool(amod,
+    dfcom =
+      (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+  ))
 
-    plot(fit[1:2],
-      ylab = eventname,
-      col = global_kicols,
-      wh = c(1110, 1110),
-      xlim = c(0, 12 * 30),
-      ylim = c(0, .3),
-      xlab = "Months",
-      axes = F,
-      lwd = 3,
-      lty = c(1, 2),
-      xaxs = "i", yaxs = "i"
-    )
-  } else {
-    # c(bottom, left, top, right)
-    par(mar = c(6, 4.5, 1, 4) + 0.1)
+  hrprint <- paste0(
+    fn(exp(asmod$estimate[1]), dig = 2),
+    " (", fn(exp(asmod$estimate[1] - global_z05 * asmod$std.error[1]), dig = 2),
+    "-", fn(exp(asmod$estimate[1] + global_z05 * asmod$std.error[1]), dig = 2), "), ",
+    fn(asmod$p.value[1], dig = 3, p = TRUE)
+  )
 
-    plot(fits,
-      fun = "event",
-      ylab = eventname,
-      xscale = 30.5,
-      yscale = 100,
-      col = global_kicols,
-      mark.time = FALSE,
-      bty = "n",
-      xlim = c(0, 12 * 30),
-      ylim = c(0, .3),
-      xlab = "Months",
-      axes = F,
-      lwd = 3,
-      lty = c(1, 2),
-      xaxs = "i", yaxs = "i"
-    )
-  }
+  # c(bottom, left, top, right)
+  cexmy <- 1.2
+  par(mar = c(6.5, 6, 1, 1.5) + 0.1)
 
-  axis(2, seq(0, 0.5, 0.1), seq(0, 50, 10), las = 2)
-  axis(1, at = seq(0, 12, 1) * 30, seq(0, 12, 1))
+  plots <- plot(fits,
+    fun = "event",
+    ylab = paste0(eventname, " (%)"),
+    yscale = 100,
+    xscale = 30.5,
+    col = global_cols[c(8, 3)],
+    mark.time = FALSE,
+    bty = "n",
+    xlim = c(0, 12 * 30),
+    ylim = c(0, 0.35),
+    xlab = "Follow-up (months)",
+    cex.lab = cexmy,
+    axes = F,
+    lwd = 4,
+    lty = c(1, 2),
+    xaxs = "i", yaxs = "i"
+  )
 
-  if (!is.null(eventcr)) {
-    ypos <- timepoints(fit[1:2], 12 * 30)$est
-  } else {
-    ypos <- 1 - summary(fits, 12 * 30)$surv
-  }
+  axis(2, seq(0, 0.35, 0.05), c(seq(0, 30, 5), 100), las = 2, cex.axis = cexmy)
+  axis(1, at = seq(0, 12, 2) * 30, seq(0, 12, 2), cex.axis = cexmy)
+  axis.break(2, 0.325, style = "slash")
+
+  ypos <- 1 - summary(fits, 9 * 30, extend = T)$surv
 
   ylabs <- bind_cols(
-    ypos = c(ypos + yposplus),
-    ytext = c("Not TP", "TP")
-  )
+    ypos = ypos,
+    ytext = c("No RCT", "RCT")
+  ) %>%
+    arrange(ypos)
 
-  mtext(
-    side = 4,
-    line = .2,
-    at = ylabs$ypos,
-    ylabs$ytext,
-    las = 1
-  )
+  text(ylabs$ypos[1] - yposplus[1], x = 9 * 30, ylabs$ytext[1], pos = 4, cex = cexmy)
+  text(ylabs$ypos[2] + yposplus[2], x = 9 * 30, ylabs$ytext[2], pos = 2, cex = cexmy)
 
-  mtext("No. at risk", side = 1, line = 3, at = -60, adj = 0, cex = 1)
+  text(y = 0.28, x = 4 * 30, "Adjusted HR (95% CI), p-value", cex = cexmy, adj = 0.5)
+  text(y = 0.26, x = 4 * 30, hrprint, cex = cexmy, adj = 0.5)
 
-  mtext("Not TP", side = 1, line = 4, at = -55, adj = 0, cex = 1)
-  mtext("TP", side = 1, line = 5, at = -55, adj = 0, cex = 1)
+  mtext("No. at risk", side = 1, line = 3.7, at = -60, adj = 0, cex = cexmy, font = 2)
+  mtext("No RCT", side = 1, line = 4.7, at = -60, adj = 0, cex = cexmy)
+  mtext("RCT", side = 1, line = 5.7, at = -60, adj = 0, cex = cexmy)
 
-  nrisk <- summary(fits, seq(0, 12, 2) * 30)$n.risk
+  nrisk <- summary(fits, seq(0, 12, 2) * 30, extend = T)$n.risk
 
-  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[1:7], line = 3, tick = FALSE, cex.axis = 1)
-  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[8:14], line = 4, tick = FALSE, cex.axis = 1)
-
-  # text(20, 0.65, paste0("P-value ", pm), pos = 4)
+  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[1:7], line = 3.7, tick = FALSE, cex.axis = cexmy)
+  axis(1, at = seq(0, 12, 2) * 30, labels = nrisk[8:14], line = 4.7, tick = FALSE, cex.axis = cexmy)
 }
 ```
 
-```{r kmdeath, fig.cap="1-KM All-cause mortality", cache=cacheon, dependson="km"}
+```{r kmdeath, fig.cap="1-KM All-cause mortality", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   time = "outtime_death",
   event = "out_death",
-  eventname = "All-cause mortality (%)",
-  yposplus = c(0, 0)
+  eventname = "All-cause mortality"
 )
 ```
 
-```{r km1hfhosp, fig.cap="First HF hospitalization", cache=cacheon, dependson="km"}
+```{r km1hfhosp, fig.cap="First HF hospitalization", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   time = "outtime_hosphf",
   event = "out_hosphf",
-  eventcr = "out_hosphf_cr",
-  eventname = "First HF hospitalisation (%)",
-  yposplus = c(0, 0)
+  eventname = "First HF hospitalisation"
 )
 ```

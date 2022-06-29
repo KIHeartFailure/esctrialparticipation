@@ -43,16 +43,12 @@ edata <- edata %>%
       num_dmDev %in% c("PM") ~ 2,
       num_dmDev %in% c("CRT-P", "CRT-D", "ICD") ~ 3
     ), levels = 1:3, labels = c("No device", "PM", "CT/ICD")),
-
-    # eGFR according to CKD-EPI
-    sex = recode(num_dmgender, "Male" = 1, "Female" = 0),
-    ethnicity = case_when(
-      is.na(num_dmEthnic) ~ NA_real_,
-      num_dmEthnic == "Black" ~ 1,
-      TRUE ~ 0
-    ),
     num_Cre = coalesce(num_dcCre, num_opCre),
-    num_CKDEPI = nephro::CKDEpi.creat(num_Cre, sex, num_age, ethnicity),
+    # eGFR according to CKD-EPI 2021 https://www.nejm.org/doi/full/10.1056/NEJMoa2102953
+    tmp_k = if_else(num_dmgender == "Female", 0.7, 0.9),
+    tmp_a = if_else(num_dmgender == "Female", -0.241, -0.302),
+    tmp_add = if_else(num_dmgender == "Female", 1.012, 1),
+    num_CKDEPI = 142 * pmin(num_Cre / tmp_k, 1)^tmp_a * pmax(num_Cre / tmp_k, 1)^-1.200 * 0.9938^num_age * tmp_add,
     num_CKDEPI = if_else(num_CKDEPI == Inf, NA_real_, num_CKDEPI),
     num_CKDEPI_cat = factor(case_when(
       num_CKDEPI < 60 ~ 2,
@@ -109,7 +105,7 @@ edata <- edata %>%
       num_Ef <= 49 ~ 2,
       num_Ef >= 50 ~ 3
     ),
-    levels = 1:3, labels = c("<41%", "41-49%", ">=50%")
+    levels = 1:3, labels = c("<=40%", "41-49%", ">=50%")
     ),
     num_dmEflp_cat = factor(case_when(
       is.na(num_dmEflp) ~ NA_real_,
@@ -117,10 +113,9 @@ edata <- edata %>%
       num_dmEflp <= 49 ~ 2,
       num_dmEflp >= 50 ~ 3
     ),
-    levels = 1:3, labels = c("<41%", "41-49%", ">=50%")
+    levels = 1:3, labels = c("<=40%", "41-49%", ">=50%")
     ),
     num_Echo = coalesce(num_dcEcho, num_opEcho),
-    num_Ef = coalesce(num_dcEf, num_opEf),
     num_Lvdd = coalesce(num_dcLvdd, num_opLvdd),
     num_Lvh = coalesce(num_dcLvh, num_opLvh),
     # num_Ladim = coalesce(num_dcLadim, num_opLadim),
@@ -409,7 +404,11 @@ edata <- edata %>%
       f1_BBdose_eqCarvedilol < 50 ~ 2,
       f1_BBdose_eqCarvedilol >= 50 ~ 3
     ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
-
+    num_dmPtype = recode_factor(num_dmPtype,
+      Hospital = "Inpatient",
+      Outpatient = "Outpatient"
+    ),
+    num_dmPtype = relevel(num_dmPtype, ref = "Outpatient"),
 
     # Outcomes
     enddtm = coalesce(num_f1DeathDt, num_f1contDt),
@@ -447,7 +446,7 @@ edata <- edata %>%
     ),
     outtime_hosphf = as.numeric(out_hosphfdtm - startdtm),
     # impute hf hosp date
-    outtime_hosphf = ifelse(out_hosphf == 1 & is.na(outtime_hosphf), outtime_death / 2, outtime_hosphf),
+    outtime_hosphf = ifelse(out_hosphf == 1 & (is.na(outtime_hosphf) | outtime_hosphf < 0), outtime_death / 2, outtime_hosphf),
     outtime_hosphf = pmin(outtime_hosphf, outtime_death, na.rm = TRUE),
 
     # death or hf hosp

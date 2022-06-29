@@ -118,3 +118,6 @@ modvars <- c(
   "num_Nt_cat",
   "num_CKDEPI_cat"
 )
+
+modvarscox <- modvars
+modvarscox[modvarscox == "num_dmPtype"] <- "strata(num_dmPtype)"

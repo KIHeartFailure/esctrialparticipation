@@ -13,6 +13,7 @@ ProjectTemplate::reload.project(
 ProjectTemplate::cache("tab1vars")
 ProjectTemplate::cache("tabmedvars")
 ProjectTemplate::cache("modvars")
+ProjectTemplate::cache("modvarscox")
 
 ProjectTemplate::cache("flow")
 
