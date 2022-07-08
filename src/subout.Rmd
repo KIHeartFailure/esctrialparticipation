@@ -10,10 +10,11 @@ survsubfunc <- function(time, event, xvar, xvarname) {
   for (i in seq_along(levs)) {
     out[1 + i, 1] <- paste0("  ", levs[i])
 
+    xvaruse <- str_detect(modvarscox, xvar, negate = T)
     ## adjusted individual covariates
     amod <- with(imp, coxph(formula(paste0(
       "Surv(", time, ",", event, " == 1) ~ num_dmRCT * relevel(", xvar, ", ref = '", levs[i], "') + ",
-      paste(modvarscox[modvarscox != xvar], collapse = " + ")
+      paste(modvarscox[xvaruse], collapse = " + ")
     ))))
 
     ## df the number of events minus the regression coefficients.
@@ -226,8 +227,8 @@ plotforest <- function(forestdata) {
     mutate(
       Subgroup = str_replace_all(Subgroup, ">=", "\u2265"),
       Subgroup = str_replace_all(Subgroup, "<=", "\u2264"),
-      Subgroup = str_replace_all(Subgroup, "<12", "12"),
-      Subgroup = str_replace_all(Subgroup, ">12", "12")
+      Subgroup = str_replace_all(Subgroup, "<12mo", "<12"),
+      Subgroup = str_replace_all(Subgroup, ">12mo", ">12")
     )
 
   axis(2,
@@ -272,7 +273,7 @@ death <- survsubfunc2(
 )
 ```
 
-```{r forestdeath, cache=cacheon, dependson=c("outsubdeath", "outsubplot"), fig.cap="Subgroups Death", fig.width=5, fig.height=10}
+```{r forestdeath, cache=cacheon, dependson=c("outsubdeath", "outsubplot"), fig.cap="Subgroups All-cause mortality", fig.width=5, fig.height=10}
 plotforest(death)
 ```
 

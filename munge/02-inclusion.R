@@ -12,8 +12,14 @@ edata <- edata %>%
   filter(num_dcVital == "Alive" | is.na(num_dcVital))
 
 flow <- rbind(flow, c(
-  "Discharged alive (if hospitalized)",
-  nrow(edata %>% filter(num_dcVital == "Alive" | is.na(num_dcVital)))
+  "Discharged alive (if hospitalized)", nrow(edata)
+))
+
+edata <- edata %>%
+  filter(CID != "LV9")
+
+flow <- rbind(flow, c(
+  "Removed 1 center", nrow(edata)
 ))
 
 edata <- edata %>%

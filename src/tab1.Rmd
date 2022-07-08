@@ -44,8 +44,10 @@ tab1func <- function(data, tabvars = tab1vars,
       )
     )
 
+  tabnamebasexls <- str_replace(tabnamebase, "<=", "below")
+  tabnamebasexls <- str_replace(tabnamebase, ">=", "above")
   write.xlsx(tab %>%
-    select(Variable, Missing:p), paste0("./output/tabs/tab1_", tabnamebase, tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+    select(Variable, Missing:p), paste0("./output/tabs/tab1_", tabnamebasexls, tabname, "_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
   # footnotes
   tab <- tab %>%

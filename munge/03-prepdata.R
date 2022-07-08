@@ -19,8 +19,7 @@ edata <- edata %>%
       num_dmBpm < 70 ~ "<70",
       num_dmBpm >= 70 ~ ">=70"
     ),
-    num_dmhome = if_else(num_dmhome == "Other", "Other situation", as.character(num_dmhome)),
-    num_dmhome_cat = if_else(num_dmhome %in% c("Other situation", "Nursing home"), "Other", as.character(num_dmhome)),
+    num_dmhome_cat = recode_factor(num_dmhome, "Nursing home" = "Other"),
     num_dmSmoking_cat = factor(case_when(
       is.na(num_dmSmoking) ~ NA_real_,
       num_dmSmoking == "Current" ~ 2,
@@ -42,7 +41,7 @@ edata <- edata %>%
       num_dmDev %in% c("No") ~ 1,
       num_dmDev %in% c("PM") ~ 2,
       num_dmDev %in% c("CRT-P", "CRT-D", "ICD") ~ 3
-    ), levels = 1:3, labels = c("No device", "PM", "CT/ICD")),
+    ), levels = 1:3, labels = c("No device", "PM", "CRT/ICD")),
     num_Cre = coalesce(num_dcCre, num_opCre),
     # eGFR according to CKD-EPI 2021 https://www.nejm.org/doi/full/10.1056/NEJMoa2102953
     tmp_k = if_else(num_dmgender == "Female", 0.7, 0.9),
@@ -57,7 +56,6 @@ edata <- edata %>%
     levels = 1:2,
     labels = c(">=60", "<60")
     ),
-    # num_Hb = coalesce(num_dcHb, num_opHb),
     num_Nyha = coalesce(num_dcNyha, num_opNyha),
     num_Nyha_cat = case_when(
       is.na(num_Nyha) ~ NA_character_,
@@ -70,7 +68,6 @@ edata <- edata %>%
       num_Nt < 1000 ~ "<1000",
       num_Nt >= 1000 ~ ">=1000"
     ),
-    # num_Mr = coalesce(num_dcMr, num_opMr),
     num_Hypop = coalesce(num_dcHypop, num_opHypop),
     num_Jvp = coalesce(num_dcJvp, num_opJvp),
     num_Hep = coalesce(num_dcHep, num_opHep),
@@ -81,18 +78,7 @@ edata <- edata %>%
       TRUE ~ "No"
     ),
 
-    # tab 2
-
-    ## ecg
-    num_Ecg = coalesce(num_dcEcg, num_opEcg),
-    num_Ryth = coalesce(num_dcRyth, num_opRyth),
-    num_QrsD = coalesce(num_dcQrsD, num_opQrsD),
-    num_Qt = coalesce(num_dcQt, num_opQt),
-    num_Lbbb = coalesce(num_dcLbbb, num_opLbbb),
-    num_Lvh2 = coalesce(num_dcLvh2, num_opLvh2),
-
     ## x-ray
-    num_Xr = coalesce(num_dcXr, num_opXr),
     num_Xrn = coalesce(num_dcXrn, num_opXrn),
     num_Xpu = coalesce(num_dcXpu, num_opXpu),
     pulm_congestion = if_else(num_Xrn == "Yes", "No", as.character(num_Xpu)),
@@ -116,79 +102,9 @@ edata <- edata %>%
     levels = 1:3, labels = c("<=40%", "41-49%", ">=50%")
     ),
     num_Echo = coalesce(num_dcEcho, num_opEcho),
-    num_Lvdd = coalesce(num_dcLvdd, num_opLvdd),
-    num_Lvh = coalesce(num_dcLvh, num_opLvh),
-    # num_Ladim = coalesce(num_dcLadim, num_opLadim),
-    num_Rsp = coalesce(num_dcRsp, num_opRsp),
     num_MitReg = coalesce(num_dcMitReg, num_opMitReg),
-    num_AorSte = coalesce(num_dcAorSte, num_opAorSte),
-    num_AorReg = coalesce(num_dcAorReg, num_opAorReg),
-    num_TriCus = coalesce(num_dcTriCus, num_opTriCus),
-
-    ## Excercice test
-    num_ExInab = coalesce(num_dcExInab, num_opExInab),
-    num_Cycle = coalesce(num_dccycle, num_opcycle),
-    num_Tread = coalesce(num_dctread, num_optread),
-    num_VO2 = coalesce(num_dcVO2, num_opVO2),
-    num_Walk = coalesce(num_dcWalk, num_opWalk),
-
-    ## holter monitoring
-    num_Hol = coalesce(num_dcHol, num_opHol),
-    # num_Hr = coalesce(num_dcHr, num_opHr),
-    # num_Pvc = coalesce(num_dcPvc, num_opPvc),
-    num_Uvt = coalesce(num_dcUvt, num_opUvt),
-    num_Svt = coalesce(num_dcSvt, num_opSvt),
-    # num_Afib = coalesce(num_dcAfib, num_opAfib),
-
-    ## other
-    num_Cora = coalesce(num_dcCora, num_opCora),
-    num_Cct = coalesce(num_dcCct, num_opCct),
-    num_Pci = coalesce(num_dcPci, num_opPci),
-    num_Eps = coalesce(num_dcEps, num_opEps),
-    num_Transab = coalesce(num_dcTransab, num_opTransab),
-    num_Cardiov = coalesce(num_dcCardiov, num_opCardiov),
-    num_RhCath = coalesce(num_dcRhCath, num_opRhCath),
-    num_Mysc = coalesce(num_dcMysc, num_opMysc),
-    num_EndBi = coalesce(num_dcEndBi, num_opEndBi),
-    num_Iapb = coalesce(num_dcIapb, num_opIapb),
-    num_Crt = coalesce(num_dcCrt, num_opCrt),
-    num_Icd = coalesce(num_dcIcd, num_opIcd),
-    num_Score = coalesce(num_dcScore, num_opScore),
 
     ## meds
-
-    d_rasi_prior = case_when(
-      is.na(num_mdACEp) | is.na(num_mdATp) ~ NA_character_,
-      num_mdACEp == "Yes" | num_mdATp == "Yes" ~ "Yes",
-      TRUE ~ "No"
-    ),
-    d_rasiarni_prior = case_when(
-      is.na(num_mdACEp) | is.na(num_mdATp) ~ NA_character_,
-      num_mdACEp == "Yes" | num_mdATp == "Yes" | num_mdARNIp == "Yes" ~ "Yes",
-      TRUE ~ "No"
-    ),
-    d_ACEdose_eqCaptopril_prior = case_when(
-      num_mdACEp_c2 == "Captopril" ~ num_mdACEpdo / 150 * 150,
-      num_mdACEp_c2 == "Ramipril" ~ num_mdACEpdo / 10 * 150,
-      num_mdACEp_c2 == "Enalapril" ~ num_mdACEpdo / 40 * 150,
-      num_mdACEp_c2 == "Perindopril" ~ num_mdACEpdo / 16 * 150,
-      num_mdACEp_c2 == "Lisinopril" ~ num_mdACEpdo / 40 * 150,
-      num_mdACEp_c2 == "Fosinopril" ~ num_mdACEpdo / 40 * 150
-    ),
-    d_ATdose_eqCaptopril_prior = case_when(
-      num_mdATp_c2 == "Candesartan" ~ num_mdATpdo / 32 * 150,
-      num_mdATp_c2 == "Losartan" ~ num_mdATpdo / 150 * 150,
-      num_mdATp_c2 == "Valsartan" ~ num_mdATpdo / 320 * 150
-    ),
-    d_ARNIdose_eqCaptopril_prior = case_when(
-      num_mdARNIp == "Yes" ~ num_mdARNIpdo / 400 * 150
-    ),
-    d_rasiarnimaxdose_prior = pmax(d_ACEdose_eqCaptopril_prior, d_ATdose_eqCaptopril_prior, d_ARNIdose_eqCaptopril_prior, na.rm = T),
-    d_rasiarnidosetarget_prior = factor(case_when(
-      d_rasiarnimaxdose_prior < 150 / 2 ~ 1,
-      d_rasiarnimaxdose_prior < 150 ~ 2,
-      d_rasiarnimaxdose_prior >= 150 ~ 3
-    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdACE_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdACEd,
       num_dmPtype == "Outpatient" ~ num_mdACEh
@@ -196,10 +112,6 @@ edata <- edata %>%
     num_mdACE_c2_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdACEd_c2,
       num_dmPtype == "Outpatient" ~ num_mdACEh_c2
-    ),
-    num_mdACE_aftern = case_when(
-      num_dmPtype == "Hospital" ~ num_mdACEdn,
-      num_dmPtype == "Outpatient" ~ num_mdACEhn
     ),
     num_mdACEdo_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdACEddo,
@@ -213,10 +125,6 @@ edata <- edata %>%
       num_dmPtype == "Hospital" ~ num_mdATd_c2,
       num_dmPtype == "Outpatient" ~ num_mdATh_c2
     ),
-    num_mdAT_aftern = case_when(
-      num_dmPtype == "Hospital" ~ num_mdATdn,
-      num_dmPtype == "Outpatient" ~ num_mdAThn
-    ),
     num_mdATdo_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdATddo,
       num_dmPtype == "Outpatient" ~ num_mdAThdo
@@ -225,18 +133,9 @@ edata <- edata %>%
       num_dmPtype == "Hospital" ~ num_mdARNId,
       num_dmPtype == "Outpatient" ~ num_mdARNIh
     ),
-    num_mdARNI_aftern = case_when(
-      num_dmPtype == "Hospital" ~ num_mdARNIdn,
-      num_dmPtype == "Outpatient" ~ num_mdARNIhn
-    ),
     num_mdARNIdo_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdARNIddo,
       num_dmPtype == "Outpatient" ~ num_mdARNIhdo
-    ),
-    d_rasi_after = case_when(
-      is.na(num_mdACE_after) | is.na(num_mdAT_after) ~ NA_character_,
-      num_mdACE_after == "Yes" | num_mdAT_after == "Yes" ~ "Yes",
-      TRUE ~ "No"
     ),
     d_rasiarni_after = case_when(
       is.na(num_mdACE_after) | is.na(num_mdAT_after) ~ NA_character_,
@@ -267,18 +166,9 @@ edata <- edata %>%
     ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
 
     # aldo
-    d_ALdosetarget_prior = factor(case_when(
-      num_mdALpdo < 50 / 2 ~ 1,
-      num_mdALpdo < 50 ~ 2,
-      num_mdALpdo >= 50 ~ 3
-    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdAL_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdALd,
       num_dmPtype == "Outpatient" ~ num_mdALh
-    ),
-    num_mdAL_aftern = case_when(
-      num_dmPtype == "Hospital" ~ num_mdALdn,
-      num_dmPtype == "Outpatient" ~ num_mdALhn
     ),
     num_mdALdo_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdALddo,
@@ -291,24 +181,9 @@ edata <- edata %>%
     ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
 
     ## bbl
-    d_BBdose_eqCarvedilol_prior = case_when(
-      num_mdBBp_c2 == "Bisoprolol" ~ num_mdBBpdo / 10 * 50,
-      num_mdBBp_c2 == "Metoprolol" ~ num_mdBBpdo / 200 * 50,
-      num_mdBBp_c2 == "Nebivolol" ~ num_mdBBpdo / 10 * 50,
-      num_mdBBp_c2 == "Carvedilol" ~ num_mdBBpdo / 50 * 50
-    ),
-    d_BBdosetarget_prior = factor(case_when(
-      d_BBdose_eqCarvedilol_prior < 50 / 2 ~ 1,
-      d_BBdose_eqCarvedilol_prior < 50 ~ 2,
-      d_BBdose_eqCarvedilol_prior >= 50 ~ 3
-    ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
     num_mdBB_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdBBd,
       num_dmPtype == "Outpatient" ~ num_mdBBh
-    ),
-    num_mdBB_aftern = case_when(
-      num_dmPtype == "Hospital" ~ num_mdBBdn,
-      num_dmPtype == "Outpatient" ~ num_mdBBhn
     ),
     num_mdBB_c2_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdBBd_c2,
@@ -329,17 +204,9 @@ edata <- edata %>%
       d_BBdose_eqCarvedilol_after < 10 ~ 2,
       d_BBdose_eqCarvedilol_after >= 10 ~ 3
     ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
-    num_mdBBdo_aftercn = case_when(
-      num_mdBB_after == "Yes" | num_mdBB_aftern %in% c("Contraindicated", "Not tolerated") ~ "Yes/Not tol/Contraindicated",
-      num_mdBB_after == "No" ~ "Reason No Other/Missing"
-    ),
 
     # Meds at follow-up
 
-    f1_AL = case_when(
-      num_f1MedAny == "No" ~ "No",
-      TRUE ~ as.character(num_f1ALh)
-    ),
     f1_ACE = case_when(
       num_f1MedAny == "No" ~ "No",
       TRUE ~ as.character(num_f1ACEh)
@@ -351,11 +218,6 @@ edata <- edata %>%
     f1_ARNI = case_when(
       num_f1MedAny == "No" ~ "No",
       TRUE ~ as.character(num_f1ARNI)
-    ),
-    f1_rasi = case_when(
-      is.na(f1_ACE) | is.na(f1_AT) ~ NA_character_,
-      f1_ACE == "Yes" | f1_AT == "Yes" ~ "Yes",
-      TRUE ~ "No"
     ),
     f1_rasiarni = case_when(
       is.na(f1_ACE) | is.na(f1_AT) ~ NA_character_,
@@ -384,6 +246,10 @@ edata <- edata %>%
       f1_rasiarnimaxdose < 150 ~ 2,
       f1_rasiarnimaxdose >= 150 ~ 3
     ), levels = c(1:3), labels = c("<50%", "50-<100%", "100%")),
+    f1_AL = case_when(
+      num_f1MedAny == "No" ~ "No",
+      TRUE ~ as.character(num_f1ALh)
+    ),
     f1_ALdosetarget = factor(case_when(
       num_f1ALhdo < 50 / 2 ~ 1,
       num_f1ALhdo < 50 ~ 2,
@@ -421,11 +287,6 @@ edata <- edata %>%
       num_f1vital == "Alive" ~ 0,
       num_f1vital == "Dead" ~ 1
     ),
-    out_deathcv = case_when(
-      is.na(out_death) ~ NA_real_,
-      num_f1DeathCs %in% c("Cardiac", "Vascular") ~ 1,
-      TRUE ~ 0
-    ), # pats with missing info are NOT included in CV
 
     # HF hosp
     out_hosphf = case_when(
@@ -447,13 +308,7 @@ edata <- edata %>%
     outtime_hosphf = as.numeric(out_hosphfdtm - startdtm),
     # impute hf hosp date
     outtime_hosphf = ifelse(out_hosphf == 1 & (is.na(outtime_hosphf) | outtime_hosphf < 0), outtime_death / 2, outtime_hosphf),
-    outtime_hosphf = pmin(outtime_hosphf, outtime_death, na.rm = TRUE),
-
-    # death or hf hosp
-    out_deathhosphf = ifelse(out_hosphf == 1, 1, out_death),
-
-    # comp risk hfh
-    out_hosphf_cr = if_else(out_death == 1 & out_hosphf == 0, 2, out_hosphf)
+    outtime_hosphf = pmin(outtime_hosphf, outtime_death, na.rm = TRUE)
   ) %>%
-  mutate_if(is.character, as.factor) %>%
+  mutate(across(where(is.character), as.factor)) %>%
   select(-starts_with("tmp_"))

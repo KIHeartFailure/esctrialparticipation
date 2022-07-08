@@ -56,30 +56,20 @@ tab1vars <- c(
 )
 
 tabmedvars <- c(
-  "d_rasi_prior",
-  "d_rasiarni_prior",
-  "d_rasiarnidosetarget_prior",
-  "d_rasi_after",
   "d_rasiarni_after",
   "d_rasiarnidosetarget_after",
-  "f1_rasi",
   "f1_rasiarni",
   "f1_rasiarnidosetarget",
-  "num_mdALp",
-  "d_ALdosetarget_prior",
   "num_mdAL_after",
   "d_ALdosetarget_after",
   "f1_AL",
   "f1_ALdosetarget",
-  "num_mdBBp",
-  "d_BBdosetarget_prior",
   "num_mdBB_after",
   "d_BBdosetarget_after",
   "f1_BB",
   "f1_BBdosetarget",
   "num_Crt",
-  "num_Icd",
-  "num_Score"
+  "num_Icd"
 )
 
 modvars <- c(
@@ -90,6 +80,8 @@ modvars <- c(
   "num_dmhome_cat",
   "num_dmBp1_cat",
   "num_dmBpm_cat",
+  "num_Nt_cat",
+  "num_CKDEPI_cat",
   "per_congestion",
   "pulm_congestion",
   "num_Hypop",
@@ -114,9 +106,7 @@ modvars <- c(
   "num_dmDis",
   "num_Nyha_cat",
   "num_Ef_cat",
-  "num_MitReg",
-  "num_Nt_cat",
-  "num_CKDEPI_cat"
+  "num_MitReg"
 )
 
 modvarscox <- modvars

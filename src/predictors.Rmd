@@ -25,8 +25,8 @@ orforest <- orforest %>%
       Variable == "num_age_cat>=65" ~ "Age \u226565 years",
       Variable == "num_dmgenderFemale" ~ "Female Sex",
       Variable == "num_dmBmi_cat>=25" ~ "BMI \u226525 kg/m2",
-      Variable == "num_dmhome_catHome with family(partner)" ~ "Home with family vs Home alone",
-      Variable == "num_dmhome_catOther" ~ "Other vs Home alone",
+      Variable == "num_dmhome_catHome with family(partner)" ~ "Home with family vs Other",
+      Variable == "num_dmhome_catHome alone" ~ "Home alone vs Other",
       Variable == "num_dmBp1_cat>=100" ~ "Systolic BP \u2265100 (mmHg)",
       Variable == "num_dmBpm_cat>=70" ~ "Heart rate \u226570 (beats/min)",
       Variable == "per_congestion" ~ "Peripheral congestion",
@@ -69,19 +69,20 @@ orforest <- orforest %>%
 # exp(max(orforest$uci))
 
 orforest <- orforest %>%
-  arrange(logor) %>%
-  mutate(order = n():1)
+  arrange(desc(logor)) %>%
+  mutate(order = 1:n())
 
 cextext <- 0.85
 minmy <- 0.5
+maxmy <- 2.5
 
 # c(bottom, left, top, right)
-par(mar = c(4, 20, 0, 0) + 0.2)
+par(mar = c(4, 20, 0, 0.5) + 0.2)
 plot(orforest$logor, orforest$order,
   xlab = "",
   xlim = c(
     log(minmy),
-    log(2)
+    log(maxmy)
   ),
   ylim = c(1, max(orforest$order)),
   axes = FALSE,
@@ -106,7 +107,7 @@ for (i in 1:nrow(orforest)) {
     arrows(log(minmy) + 0.01, orforest$order[i], log(minmy),
       orforest$order[i],
       col = global_cols[3],
-      code = 2, length = 0.15, lwd = 2
+      code = 2, length = 0.095, lwd = 2
     )
   }
 }
@@ -114,8 +115,8 @@ for (i in 1:nrow(orforest)) {
 matplot(c(0, 0), c(-1, nrow(orforest) + 0.5), type = "l", lty = 3, add = TRUE, col = "black")
 
 axis(1,
-  cex.axis = cextext, at = log(c(minmy, 1, 2)),
-  labels = c(minmy, 1, 2)
+  cex.axis = cextext, at = log(c(minmy, 1, maxmy)),
+  labels = c(minmy, 1, maxmy)
 )
 
 axis(2,
@@ -131,7 +132,7 @@ axis(2,
 )
 axis(2,
   at = 1:nrow(orforest),
-  labels = rev(orforest$orp),
+  labels = orforest$orp,
   cex.axis = cextext, tick = FALSE, las = 2, line = 3.5, hadj = 0.5
 )
 

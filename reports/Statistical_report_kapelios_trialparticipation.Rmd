@@ -1,6 +1,5 @@
 ---
 title: 'Statistical report: Association between clinical trial participation and outcomes in patients with heart failure: observations from the ESC Heart Failure Long-Term Registry'
-subtitle: 'DRAFT'
 author: 'Statistician: Lina Benson'
   
 date: "`r Sys.Date()`"
@@ -16,8 +15,6 @@ bibliography: references.bib
 nocite: '@*'
 urlcolor: blue
 linkcolor: black
-header-includes:
-   - \usepackage{draftwatermark}
 ---
 
 \newpage 
@@ -92,13 +89,13 @@ to death or last follow-up were set to death or last follow-up.
 Missing data for the covariates included in the models was imputed with multiple 
 imputation using mice [@mice] for 10 datasets and 10 iterations. 
 Variables included in the imputation model are the same as are 
-included in the cox regression. TP was not included in the model.  
+included in the cox regression, indicated in Table \ref{tab:tab1surv}. TP was not included in the model.  
 
 \clearpage 
 
 ## Baseline characteristics
 
-```{r, child = "../src/tab1.Rmd"}
+```{r, child = "./src/tab1.Rmd"}
 
 ```
 
@@ -111,9 +108,10 @@ Note
 
 ## Assocation between trial participation and characteristics
 
-Performed using logistic regression models on the analysis population (patients with follow-up data).
+Performed using logistic regression models on the analysis population (patients with follow-up data) 
+including variables indicated in Table \ref{tab:tab1surv}.
 
-```{r, child = "../src/predictors.Rmd"}
+```{r, child = "./src/predictors.Rmd"}
 
 ```
 
@@ -147,11 +145,11 @@ The median (q1-q3) follow-up for the long-term outcomes is
                                    pull(sumpy)` patient-years of follow-up.
 
 
-```{r, child = "../src/km.Rmd"}
+```{r, child = "./src/km.Rmd"}
 
 ```
 
-```{r, child = "../src/outtab.Rmd"}
+```{r, child = "./src/outtab.Rmd"}
 
 ```
 
@@ -166,7 +164,7 @@ stratified for in the model.
 Subgroup analysis are performed for selected variables. 
 Performed using interaction effects on the patients in the analysis population. 
 
-```{r, child = "../src/subout.Rmd"}
+```{r, child = "./src/subout.Rmd"}
 
 ```
 
@@ -174,16 +172,17 @@ Performed using interaction effects on the patients in the analysis population.
 
 ### Residual confounding
 
-In order to assess how robust the association between trail participation and the outcomes are 
+In order to assess how robust the association between 
+trail participation and All-cause mortality (first HFH was not statistically significant) is 
 to residual confounding the E-value 
 was calculated [@evalue]. The E-value is interpreted as the minimum Risk Ratio 
 that an unmeasured confounder would need to have with both trail participation and 
-the outcome, conditional on the variables currently adjusted 
+all-cause mortality, conditional on the variables currently adjusted 
 for in the model, to fully eliminate the association between trail participation and 
-outcome. See Table \ref{tab:evalueprint2} in order to compare the magnitude of the E-value 
+all-cause mortality. See Table \ref{tab:evalueprint2} in order to compare the magnitude of the E-value 
 within the context of the study [@evalue2] (Table \ref{tab:evalueprint2} only for internal use, do not present in paper). 
 
-```{r, child = "../src/evalue.Rmd"}
+```{r, child = "./src/evalue.Rmd"}
 
 ```
 
