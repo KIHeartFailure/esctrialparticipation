@@ -104,6 +104,9 @@ edata <- edata %>%
     num_Echo = coalesce(num_dcEcho, num_opEcho),
     num_MitReg = coalesce(num_dcMitReg, num_opMitReg),
 
+    num_Crt = coalesce(num_dcCrt, num_opCrt),
+    num_Icd = coalesce(num_dcIcd, num_opIcd),
+    
     ## meds
     num_mdACE_after = case_when(
       num_dmPtype == "Hospital" ~ num_mdACEd,
