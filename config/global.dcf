@@ -10,7 +10,8 @@ logging_level: INFO
 load_libraries: TRUE
 libraries: purrr, dplyr, tidyr, tibble, stringr, lubridate, kableExtra, tableone, 
               openxlsx, survival, haven, epitools, hfmisc, mice,
-              parallel, doParallel, foreach, plotrix, EValue
+              parallel, doParallel, foreach, plotrix, EValue, lme4, coxme, broom.mixed,
+              eha, ehahelper
 as_factors: FALSE
 tables_type: tibble
 attach_internal_libraries: FALSE

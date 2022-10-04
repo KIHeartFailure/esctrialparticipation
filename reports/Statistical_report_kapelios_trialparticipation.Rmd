@@ -108,8 +108,8 @@ Note
 
 ## Assocation between trial participation and characteristics
 
-Performed using logistic regression models on the analysis population (patients with follow-up data) 
-including variables indicated in Table \ref{tab:tab1surv}.
+Performed using a generalized linear mixed-effects model (GLMM) with a binomial distribution on the analysis population (patients with follow-up data) 
+including variables indicated in Table \ref{tab:tab1surv}. Country was included as a random effect in the model. 
 
 ```{r, child = "./src/predictors.Rmd"}
 
@@ -131,7 +131,7 @@ censored at death not defined as an event or follow-up.
 
 The outcomes are presented with cumulative incidence curves and Cox proportional hazards regressions were 
 used to model the time to first event analysis. Adjustment was performed for variables indicated in Table \ref{tab:tab1surv} 
-and the selection was based on clinical judgment. 
+and the selection was based on clinical judgement. Country was stratified for in the model. 
 Due to non-proportional hazards location was stratified for in the model.
 
 The median (q1-q3) follow-up for the long-term outcomes is 
@@ -174,17 +174,16 @@ Performed using interaction effects on the patients in the analysis population.
 
 In order to assess how robust the association between 
 trail participation and All-cause mortality (first HFH was not statistically significant) is 
-to residual confounding the E-value 
-was calculated [@evalue]. The E-value is interpreted as the minimum Risk Ratio 
+to residual confounding the E-value was calculated [@evalue]. The E-value is interpreted as the minimum Risk Ratio 
 that an unmeasured confounder would need to have with both trail participation and 
 all-cause mortality, conditional on the variables currently adjusted 
 for in the model, to fully eliminate the association between trail participation and 
 all-cause mortality. See Table \ref{tab:evalueprint2} in order to compare the magnitude of the E-value 
 within the context of the study [@evalue2] (Table \ref{tab:evalueprint2} only for internal use, do not present in paper). 
-
+ 
 ```{r, child = "./src/evalue.Rmd"}
 
-```
+``` 
 
 \clearpage
 \newpage

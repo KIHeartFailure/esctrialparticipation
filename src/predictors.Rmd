@@ -1,7 +1,7 @@
 ```{r pred, cache=cacheon}
 
-ormod <- with(imp, glm(formula(paste0("num_dmRCT == 'Yes' ~ ", paste(modvars, collapse = " + "))),
-  family = binomial(link = "logit")
+ormod <- with(imp, lme4::glmer(formula(paste0("num_dmRCT == 'Yes' ~ ", paste(modvars, collapse = " + "), " + (1 | num_nation)")),
+  family = "binomial"
 ))
 
 sormod <- summary(pool(ormod))
@@ -73,8 +73,8 @@ orforest <- orforest %>%
   mutate(order = 1:n())
 
 cextext <- 0.85
-minmy <- 0.5
-maxmy <- 2.5
+minmy <- 0.4
+maxmy <- 2
 
 # c(bottom, left, top, right)
 par(mar = c(4, 20, 0, 0.5) + 0.2)
@@ -102,9 +102,17 @@ for (i in 1:nrow(orforest)) {
   matplot(c(orforest$lci[i], orforest$uci[i]), c(orforest$order[i], orforest$order[i]),
     type = "l", add = TRUE, col = global_cols[3], lwd = 2
   )
-  # if lci < 0.5
+  # if lci < minmy
   if (orforest$lci[i] < log(minmy)) {
     arrows(log(minmy) + 0.01, orforest$order[i], log(minmy),
+      orforest$order[i],
+      col = global_cols[3],
+      code = 2, length = 0.095, lwd = 2
+    )
+  }
+  # if uci > maxmy
+  if (orforest$uci[i] > log(maxmy)) {
+    arrows(log(maxmy) - 0.01, orforest$order[i], log(maxmy),
       orforest$order[i],
       col = global_cols[3],
       code = 2, length = 0.095, lwd = 2
@@ -142,6 +150,6 @@ axis(1,
 )
 axis(1,
   at = 0, cex.axis = cextext,
-  labels = "Less      RCT      More", line = 2, tick = FALSE
+  labels = "Less        RCT        More", line = 2, tick = FALSE
 )
 ```

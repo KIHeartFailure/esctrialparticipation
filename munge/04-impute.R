@@ -4,7 +4,7 @@
 
 edataforimp <- edata %>%
   filter(survpop) %>% # only impute analysis pop that will be used for models
-  select(patientid, num_dmRCT, !!!syms(modvars), starts_with("out"))
+  select(patientid, num_dmRCT, !!!syms(modvars), starts_with("out"), CID, num_nation, num_region)
 
 noimpvars <- names(edataforimp)[!names(edataforimp) %in% modvars]
 

@@ -14,15 +14,10 @@ survsubfunc <- function(time, event, xvar, xvarname) {
     ## adjusted individual covariates
     amod <- with(imp, coxph(formula(paste0(
       "Surv(", time, ",", event, " == 1) ~ num_dmRCT * relevel(", xvar, ", ref = '", levs[i], "') + ",
-      paste(modvarscox[xvaruse], collapse = " + ")
+      paste(modvarscox[xvaruse], collapse = " + "),
+      " + strata(num_nation)"
     ))))
-
-    ## df the number of events minus the regression coefficients.
-    ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
-    asmod <- summary(pool(amod,
-      dfcom =
-        (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
-    ))
+    asmod <- summary(pool(amod))
 
 
     out[1 + i, 2] <- paste0(
@@ -41,7 +36,8 @@ survsubfunc <- function(time, event, xvar, xvarname) {
       } else {
         amodnoint <- with(imp, coxph(formula(paste0(
           "Surv(", time, ",", event, " == 1) ~ num_dmRCT + relevel(", xvar, ", ref = '", levs[i], "') + ",
-          paste(modvarscox[modvarscox != xvar], collapse = " + ")
+          paste(modvarscox[modvarscox != xvar], collapse = " + "),
+          " + strata(num_nation)"
         ))))
 
         int <- D1(amod, amodnoint)
