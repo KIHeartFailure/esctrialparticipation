@@ -1,4 +1,4 @@
-# R code for the project Association between clinical trial participation and outcomes in patients with heart failure: observations from the ESC Heart Failure Long-Term Registry
+# R code for the project Participation in a clinical trial is associated with lower mortality in patients with heart failure: Observations from the ESC EORP Heart Failure Long-Term Registry
 
 The aim of this R code is to be transparent and document the data handling 
 and statistical analyses performed for the project.
