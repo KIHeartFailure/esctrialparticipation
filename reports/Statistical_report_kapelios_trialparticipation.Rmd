@@ -93,6 +93,12 @@ included in the cox regression, indicated in Table \ref{tab:tab1surv}. TP was no
 
 \clearpage 
 
+## Center characteristics
+
+```{r, child = "./src/tabcenter.Rmd"}
+
+```
+
 ## Baseline characteristics
 
 ```{r, child = "./src/tab1.Rmd"}
@@ -107,7 +113,6 @@ Note
 \clearpage
 
 ## Assocation between trial participation and characteristics
-
 Performed using a generalized linear mixed-effects model (GLMM) with a binomial distribution on the analysis population (patients with follow-up data) 
 including variables indicated in Table \ref{tab:tab1surv}. Country was included as a random effect in the model. 
 

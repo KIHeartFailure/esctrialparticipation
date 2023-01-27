@@ -1,9 +1,13 @@
 edata <- edata %>%
   mutate(
-    num_age_cat = case_when(
-      num_age < 65 ~ "<65",
-      num_age >= 65 ~ ">=65"
-    ),
+    year = year(num_dmVisitdt),
+    num_age_cat = factor(case_when(
+      num_age < 60 ~ 1,
+      num_age < 70 ~ 2,
+      num_age < 80 ~ 3,
+      num_age >= 80 ~ 4
+    ), levels = 1:4, 
+    labels = c("<60", "60-69", "70-79", ">=80")),
     num_dmBmi_cat = case_when(
       is.na(num_dmBmi) ~ NA_character_,
       num_dmBmi < 25 ~ "<25",

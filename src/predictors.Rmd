@@ -5,8 +5,13 @@ ormod <- with(imp, lme4::glmer(formula(paste0("num_dmRCT == 'Yes' ~ ", paste(mod
 ))
 
 sormod <- summary(pool(ormod))
+```
+
+
+```{r predplot, fig.cap="Associations with trial participation", cache=cacheon, dependson="pred"}
 
 nval <- length(sormod$term)
+
 orforest <- data.frame(
   var = as.character(sormod$term[2:nval]),
   logor = sormod$estimate[2:nval],
@@ -22,7 +27,9 @@ orforest <- orforest %>%
   mutate(
     modnameforest = case_when(
       Variable == "num_dmPtypeInpatient" ~ "Inpatient vs Outpatient",
-      Variable == "num_age_cat>=65" ~ "Age \u226565 years",
+      Variable == "num_age_cat>=80" ~ "Age \u226580 vs <60 (years)",
+      Variable == "num_age_cat60-69" ~ "Age 60-69 vs < 60 (years)",
+      Variable == "num_age_cat70-79" ~ "Age 70-79 vs < 60 (years)",
       Variable == "num_dmgenderFemale" ~ "Female Sex",
       Variable == "num_dmBmi_cat>=25" ~ "BMI \u226525 kg/m2",
       Variable == "num_dmhome_catHome with family(partner)" ~ "Home with family vs Other",
@@ -60,11 +67,6 @@ orforest <- orforest %>%
       TRUE ~ Variable
     )
   )
-```
-
-
-```{r predplot, fig.cap="Associations with trial participation", cache=cacheon, dependson="pred"}
-
 # exp(min(orforest$lci))
 # exp(max(orforest$uci))
 

@@ -1,0 +1,62 @@
+```{r tabcenter, cache=cacheon}
+
+tabcenter <- edata %>%
+  group_by(CID) %>%
+  count(year) %>%
+  summarize(
+    nyears = row_number(),
+    min = min(n),
+    med = fn(quantile(n, p = .5), 0),
+    max = max(n),
+    out = paste0(med, " (", min, "-", max, ")"),
+    .groups = "keep"
+  ) %>%
+  slice(n()) %>%
+  ungroup() %>%
+  select(CID, nyears, out)
+
+tabcenterprop <- edata %>%
+  group_by(CID) %>%
+  count(num_dmRCT, .drop = F) %>%
+  mutate(
+    ntot = sum(n),
+    percent = fn(n / ntot * 100, 1),
+    np = paste0(n, " (", percent, "%)")
+  ) %>%
+  ungroup() %>%
+  filter(num_dmRCT == "Yes") %>%
+  select(CID, np)
+
+tabcenterall <- left_join(tabcenter, tabcenterprop, by = "CID")
+
+colnames(tabcenterall) <- c("Centre", "Number of years including", "Median (min-max) included patients per year", "N (%) included in RCT (overall study period)")
+
+write.xlsx(tabcenterall, paste0("./output/tabs/tabcenter_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+
+default_kable(tabcenterall,
+  font_size = 6,
+  caption = "Center",
+  longtable = TRUE,
+  escape = T
+)
+```
+
+```{r tabcenter2, cache=cacheon}
+
+ntotcent <- edata %>%
+  group_by(CID) %>%
+  slice(1) %>%
+  ungroup() %>%
+  count() %>%
+  pull(n)
+nrctcent <- edata %>%
+  filter(num_dmRCT == "Yes") %>%
+  group_by(CID) %>%
+  slice(1) %>%
+  ungroup() %>%
+  count() %>%
+  mutate(np = paste0(n, " (", fn(n / ntotcent * 100, 1), "%)")) %>%
+  pull(np)
+```
+
+In total there were `r ntotcent` centers with patients in the current study. `r nrctcent` included patients in a RCT.

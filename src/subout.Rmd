@@ -171,8 +171,8 @@ survsubfunc2 <- function(time2, event2) {
 plotforest <- function(forestdata) {
   cextext <- 1
 
-  minmy <- round(exp(min(forestdata$lci, na.rm = T)), 1)
-  maxmy <- round(exp(max(forestdata$uci, na.rm = T)), 1)
+  minmy <- floor(exp(min(forestdata$lci, na.rm = T)) * 10) / 10
+  maxmy <- ceiling(exp(max(forestdata$uci, na.rm = T)) * 10) / 10
 
   # c(bottom, left, top, right)
   par(mar = c(3, 17, 0, 0.5) + 0.2)
